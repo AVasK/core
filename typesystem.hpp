@@ -1,8 +1,17 @@
 #pragma once
 
+#include <iostream>
 #include <type_traits>
 #include <cctype> // isspace
-#include <iostream>
+#include "compiler_detect.hpp"
+
+
+#if defined CORE_GCC || defined CORE_CLANG
+#   define PRETTY_FUNC __PRETTY_FUNCTION__
+#elif defined CORE_MSVC
+#   define PRETTY_FUNC __FUNCSIG__
+#endif
+
 
 #if __cplusplus/100 >= 2017
 #include "type_predicates.hpp"
@@ -21,15 +30,11 @@ struct TypeOf {
     using type = T;
     using raw_T = typename std::remove_reference<T>::type;
 
-    #if __cplusplus/100 >= 2017
-    template <typename U>
-    static constexpr bool const is_base_of = std::is_base_of<raw_T,U>::value;
-    #endif
-
-    //Cannot use enum: enums are pre-initialized
 
     constexpr auto remove_ref() const noexcept -> TypeOf<typename std::remove_reference<T>::type> {return {};}
 
+
+    #if __cplusplus/100 >= 2017
     template <class P,
         typename=typename std::enable_if<std::is_base_of<core::TypePredicate, P>::value>::type 
     >
@@ -43,9 +48,10 @@ struct TypeOf {
     constexpr bool operator() (P) const noexcept {
         return P::template eval<type>();
     }
+    #endif
 
     // TODO: Add conversion to string
-    // constexpr operator std::string () {
+    // operator std::string () {
     //     return type_name<T>();
     // }
 };
@@ -58,22 +64,25 @@ inline auto Type = TypeOf<T>{};
 
 
 template <typename T>
-constexpr inline 
+inline constexpr 
 auto type(T&&) noexcept -> TypeOf<T&&> { return {}; };
 
 
 template <class T1, class T2>
-constexpr inline 
+inline constexpr 
 bool operator== (TypeOf<T1>, TypeOf<T2>) noexcept {
     return std::is_same<T1,T2>::value;
 }
 
 template <class T1, class T2>
-constexpr inline 
+inline constexpr 
 bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
     return !(t1 == t2);
 }
 
+
+// Printing the TypeOf<T>
+namespace detail {
 
 template <size_t N>
 inline
@@ -137,24 +146,31 @@ struct CSlice {
 template <typename T>
 inline 
 constexpr auto type_name() -> CSlice {
-    auto&& prettyName = __PRETTY_FUNCTION__;
+    auto&& prettyName = PRETTY_FUNC;
     // return prettyName;
-    auto name = CSlice( __PRETTY_FUNCTION__ );
+    auto name = CSlice( PRETTY_FUNC );
     auto sq_brace = findChar(prettyName, '[');
     auto T_pos = findChar(prettyName, 'T', sq_brace);
     auto eq_sign_pos = findChar(prettyName, '=', T_pos);
     auto type_pos = skipSpace(prettyName, eq_sign_pos+1);
     name.from = type_pos;// + slen("T = ");
-    name.to   = slen(__PRETTY_FUNCTION__) - 2;
+    name.to   = slen(PRETTY_FUNC) - 2;
     return name;
 }
+
+}//namespace detail
+
 
 template <typename T>
 inline
 auto operator<< (std::ostream& os, TypeOf<T> type) -> std::ostream& {
-    os << type_name<T>();
+    os << detail::type_name<T>();
     return os;
 }
+
+#if defined PRETTY_FUNC
+#   undef PRETTY_FUNC
+#endif
 
 }//namespace typesystem
 }//namespace core

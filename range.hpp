@@ -1,18 +1,20 @@
+#pragma once
+
 #include <type_traits>
 
-template <bool Cond, typename Type>
-using Enable_if = typename std::enable_if<Cond,Type>::type;
+namespace core {
 
 
+// A stride-1 range
 template <typename T>
 class Range;
+
 
 template <typename T>
 class StrideRange;
 
 
-// Range Iterators
-// returned by begin() and end()
+// returned by begin() [and end() (before C++17)]
 template <typename T>
 class RangeIterator;
 
@@ -21,61 +23,65 @@ class StrideRangeIterator;
 
 
 template <typename T>
-auto range(T end) -> Range<T>
+inline
+constexpr auto range(T end) noexcept -> Range<T>
 {
-    return Range<T>(end);
+    return {end};
 }
 
+
 template <typename T>
-auto range(T start, T end) -> Range<T>
+inline
+constexpr auto range(T start, T end) noexcept -> Range<T>
 {
     return Range<T>(start, end);
 }
 
+
 template <typename T>
-auto range(T start, T end, T step) -> Range<T>
+inline
+constexpr auto range(T start, T end, T step) noexcept -> Range<T>
 {
     return Range<T>(start, end, step);
 }
 
     
-/// Half-open range: [begin, end), no stride
 template <typename T>
 class Range {
 public:
-    Range(T end)
+    constexpr Range(T end) noexcept
         : _begin {0}
         , _end {end}
         {}
     
-    Range(T begin, T end)
+    constexpr Range(T begin, T end) noexcept
         : _begin {begin}
         , _end   {end}
     {}
     
-    auto begin() -> RangeIterator<T>
+    constexpr auto begin() noexcept -> RangeIterator<T>
     {
         return RangeIterator<T>( _begin );
     }
     
-    auto end() -> RangeIterator<T>
+    constexpr auto end() noexcept -> RangeIterator<T>
     {
         return RangeIterator<T>( _end );
     }
     
-    auto withStride(T stride) -> StrideRange<T>
+    constexpr auto withStride(T stride) noexcept -> StrideRange<T>
     {
         return StrideRange<T>( *this, stride );
     }
     
-    auto reverse() -> StrideRange<T>
+    constexpr auto reverse() noexcept -> StrideRange<T>
     {
         return StrideRange<T>( Range(_end-1, _begin-1), -1 );
     }
     
     // Utility functions
     constexpr auto contains(T value) const noexcept -> bool;
-    
+
 protected:
     T _begin;
     T _end;
@@ -86,111 +92,92 @@ template <typename T>
 class StrideRange : public Range<T> {
     using Range<T>::_begin;
     using Range<T>::_end;
+
 public:
-    StrideRange(Range<T> base, T stride)
+    constexpr StrideRange(Range<T> base, T stride) noexcept
     : Range<T> {std::move(base)}
     , _stride {stride}
     {}
     
-    auto begin() -> StrideRangeIterator<T>
-    {
+    constexpr auto begin() noexcept -> StrideRangeIterator<T> {
         return StrideRangeIterator<T>( _begin, _stride );
     }
     
-    auto end() -> StrideRangeIterator<T>
-    {
+    constexpr auto end() noexcept -> StrideRangeIterator<T> {
         return StrideRangeIterator<T>( _end, _stride );
     }
     
-    auto reverse() -> StrideRange
-    {
+    constexpr auto reverse() noexcept -> StrideRange {
         return StrideRange( Range<T>(_end-1, _begin-1), -1 );
     }
-    
-    
+
     // Utility functions
     constexpr auto contains(T value) const noexcept -> bool;
-    
 private:
     T _stride;
 };
 
-// No stride
+
 template <typename T>
 class RangeIterator {
 public:
-    
-    RangeIterator(T start_index)
+    constexpr RangeIterator(T start_index) noexcept
     : index{ start_index }
     {}
     
-    auto operator++() -> RangeIterator&
-    {
+    constexpr auto operator++() -> RangeIterator& {
         index += 1;
         return *this;
     }
     
-    auto operator++(int) -> RangeIterator
-    {
+    constexpr auto operator++(int _) -> RangeIterator {
         auto temp = *this;
         this->operator++();
         return temp;
     }
     
-    auto operator==(RangeIterator const& other) -> bool
-    {
+    constexpr bool operator==(RangeIterator const& other) {
         return index == other.index;
     }
     
-    auto operator!=(const RangeIterator& other) -> bool
-    {
+    constexpr bool operator!=(const RangeIterator& other) {
         return !(*this == other);
     }
     
-    auto operator*() const -> T
-    {
+    constexpr auto operator*() const -> T {
         return index;
     }
-    
 private:
     T index;
 };
 
-// Range with stride
+
 template <typename T>
 class StrideRangeIterator {
 public:
-    StrideRangeIterator(T _value, T _step)
+    constexpr StrideRangeIterator(T _value, T _step) noexcept
         : current{_value}
         , step{_step} {}
     
     
     // operators to support range-based for:
     // 1. operator++()
-    inline auto operator++() -> StrideRangeIterator&
-    {
+    constexpr auto operator++ () -> StrideRangeIterator& {
         current += step;
         return *this;
     }
     
-    // 1+. postfix is given for the sake of completeness
-    // (but as usual is slightly less effective)
-    inline auto operator++(int) -> StrideRangeIterator
-    {
+    constexpr auto operator++ (int _) -> StrideRangeIterator {
         auto temp = current;
         current += step;
         return temp;
     }
     
-    // 2. operator!=(other)
-    inline auto operator!=(const StrideRangeIterator& other) -> bool
-    {
+    constexpr bool operator!= (const StrideRangeIterator& other) {
         return (step > 0) ? (current < other.current) : (current > other.current);
     }
     
-    // 3. operator*()
-    inline auto operator*() -> T&
-    {
+    constexpr auto operator*() -> T& {
         return this->current;
     }
     
@@ -200,15 +187,17 @@ private:
 };
 
 
-// Impl.
 template <typename T>
-constexpr inline auto Range<T>::contains(T value) const noexcept -> bool
-{
+inline
+constexpr bool Range<T>::contains(T value) const noexcept {
     return _begin <= value && value < _end;
 }
 
+
 template <typename T>
-constexpr inline auto StrideRange<T>::contains(T value) const noexcept -> bool
-{
+inline
+constexpr bool StrideRange<T>::contains(T value) const noexcept {
     return (value % _stride == _begin) && Range<T>::contains(value);
 }
+
+}//namespace core
