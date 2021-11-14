@@ -74,7 +74,7 @@ public:
     
     constexpr auto reverse() const noexcept -> StrideRange<T>
     {
-        return StrideRange<T>( Range(_end-1, _begin-1), -1 );
+        return StrideRange<T>( _end-1, _begin-1, -1 );
     }
     
     // Utility functions
@@ -95,11 +95,6 @@ public:
     , _end{ end }
     , _stride{ stride } 
     {}
-
-    constexpr StrideRange(Range<T> range, T stride) noexcept
-    : Range<T> {std::move(range)}
-    , _stride {stride}
-    {}
     
     constexpr auto begin() const noexcept -> StrideRangeIterator<T> {
         return StrideRangeIterator<T>( _begin, _stride );
@@ -110,7 +105,7 @@ public:
     }
     
     constexpr auto reverse() const noexcept -> StrideRange {
-        return StrideRange( Range<T>(_end-1, _begin-1), -1 );
+        return StrideRange( _end-1, _begin-1, -1 );
     }
 
     // Utility functions
