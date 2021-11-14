@@ -1,4 +1,5 @@
-// COMPILER SUPPORT
+#pragma once 
+
 #if defined __clang__ 
 #   define CORE_CLANG
 

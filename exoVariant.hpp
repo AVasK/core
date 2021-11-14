@@ -1,3 +1,6 @@
+//PENDING REWRITE
+#pragma once
+
 #include <iostream>
 #include <cstddef>
 #include <array>

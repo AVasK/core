@@ -1,6 +1,8 @@
+#pragma once 
+
 #include <type_traits>
 #include <vector>
-#include "range_iter.hpp"
+#include "range.hpp"
 
 template <typename Callable>
 class Generator;

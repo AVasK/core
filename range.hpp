@@ -1,20 +1,18 @@
 #pragma once
 
 #include <type_traits>
+#include "macros.hpp"
 
 namespace core {
-
 
 // A stride-1 range
 template <typename T>
 class Range;
 
-
 template <typename T>
 class StrideRange;
 
 
-// returned by begin() [and end() (before C++17)]
 template <typename T>
 class RangeIterator;
 
@@ -40,9 +38,9 @@ constexpr auto range(T start, T end) noexcept -> Range<T>
 
 template <typename T>
 inline
-constexpr auto range(T start, T end, T step) noexcept -> Range<T>
+constexpr auto range(T start, T end, T step) noexcept -> StrideRange<T>
 {
-    return Range<T>(start, end, step);
+    return StrideRange<T>(start, end, step);
 }
 
     
@@ -59,22 +57,22 @@ public:
         , _end   {end}
     {}
     
-    constexpr auto begin() noexcept -> RangeIterator<T>
+    constexpr auto begin() const noexcept -> RangeIterator<T>
     {
         return RangeIterator<T>( _begin );
     }
     
-    constexpr auto end() noexcept -> RangeIterator<T>
+    constexpr auto end() const noexcept -> RangeIterator<T>
     {
         return RangeIterator<T>( _end );
     }
     
-    constexpr auto withStride(T stride) noexcept -> StrideRange<T>
+    constexpr auto withStride(T stride) const noexcept -> StrideRange<T>
     {
         return StrideRange<T>( *this, stride );
     }
     
-    constexpr auto reverse() noexcept -> StrideRange<T>
+    constexpr auto reverse() const noexcept -> StrideRange<T>
     {
         return StrideRange<T>( Range(_end-1, _begin-1), -1 );
     }
@@ -89,32 +87,36 @@ protected:
 
 
 template <typename T>
-class StrideRange : public Range<T> {
-    using Range<T>::_begin;
-    using Range<T>::_end;
-
+class StrideRange {
 public:
-    constexpr StrideRange(Range<T> base, T stride) noexcept
-    : Range<T> {std::move(base)}
+
+    constexpr StrideRange(T begin, T end, T stride) noexcept 
+    : _begin{ begin }
+    , _end{ end }
+    , _stride{ stride } 
+    {}
+
+    constexpr StrideRange(Range<T> range, T stride) noexcept
+    : Range<T> {std::move(range)}
     , _stride {stride}
     {}
     
-    constexpr auto begin() noexcept -> StrideRangeIterator<T> {
+    constexpr auto begin() const noexcept -> StrideRangeIterator<T> {
         return StrideRangeIterator<T>( _begin, _stride );
     }
     
-    constexpr auto end() noexcept -> StrideRangeIterator<T> {
+    constexpr auto end() const noexcept -> StrideRangeIterator<T> {
         return StrideRangeIterator<T>( _end, _stride );
     }
     
-    constexpr auto reverse() noexcept -> StrideRange {
+    constexpr auto reverse() const noexcept -> StrideRange {
         return StrideRange( Range<T>(_end-1, _begin-1), -1 );
     }
 
     // Utility functions
     constexpr auto contains(T value) const noexcept -> bool;
 private:
-    T _stride;
+    T _begin, _stride, _end;
 };
 
 
@@ -125,26 +127,26 @@ public:
     : index{ start_index }
     {}
     
-    constexpr auto operator++() -> RangeIterator& {
+    CORE_CPP14_CONSTEXPR auto operator++() -> RangeIterator& {
         index += 1;
         return *this;
     }
     
-    constexpr auto operator++(int _) -> RangeIterator {
+    CORE_CPP14_CONSTEXPR auto operator++(int _) -> RangeIterator {
         auto temp = *this;
         this->operator++();
         return temp;
     }
     
-    constexpr bool operator==(RangeIterator const& other) {
+    constexpr bool operator==(RangeIterator const& other) const noexcept {
         return index == other.index;
     }
     
-    constexpr bool operator!=(const RangeIterator& other) {
+    constexpr bool operator!=(const RangeIterator& other) const noexcept {
         return !(*this == other);
     }
     
-    constexpr auto operator*() const -> T {
+    CORE_CPP14_CONSTEXPR auto operator*() const -> T {
         return index;
     }
 private:
@@ -162,22 +164,22 @@ public:
     
     // operators to support range-based for:
     // 1. operator++()
-    constexpr auto operator++ () -> StrideRangeIterator& {
+    CORE_CPP14_CONSTEXPR auto operator++ () -> StrideRangeIterator& {
         current += step;
         return *this;
     }
     
-    constexpr auto operator++ (int _) -> StrideRangeIterator {
+    CORE_CPP14_CONSTEXPR auto operator++ (int _) -> StrideRangeIterator {
         auto temp = current;
         current += step;
         return temp;
     }
     
-    constexpr bool operator!= (const StrideRangeIterator& other) {
+    constexpr bool operator!= (const StrideRangeIterator& other) const noexcept {
         return (step > 0) ? (current < other.current) : (current > other.current);
     }
     
-    constexpr auto operator*() -> T& {
+    CORE_CPP14_CONSTEXPR auto operator*() -> T& {
         return this->current;
     }
     

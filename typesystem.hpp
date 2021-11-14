@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <cctype> // isspace
 #include "compiler_detect.hpp"
-
+#include "macros.hpp"
 
 #if defined CORE_GCC || defined CORE_CLANG
 #   define PRETTY_FUNC __PRETTY_FUNCTION__
@@ -90,10 +90,24 @@ constexpr size_t slen(const char (&str) [N]) {
     return N;
 }
 
+#if __cplusplus/100 >= 2014
 inline
-constexpr size_t pslen(const char * const ps) {
-    for (size_t i=0; ;++i) {
-        if (ps[i] == '\0') return i;
+namespace impl_cpp14{
+    inline
+    constexpr size_t pslen(const char * const ps) {
+        for (size_t i=0; ;++i) {
+            if (ps[i] == '\0') return i;
+        }
+    }
+}
+#elif __cplusplus/100 >= 2011
+inline
+#endif
+namespace impl_cpp11{
+    inline
+    constexpr size_t pslen(const char* const ps, size_t idx=0) {
+        return (ps[idx] == '\0') ?
+        idx : pslen(ps, idx+1);
     }
 }
 
@@ -145,7 +159,8 @@ struct CSlice {
 
 template <typename T>
 inline 
-constexpr auto type_name() -> CSlice {
+CORE_CPP14_CONSTEXPR
+auto type_name() -> CSlice {
     auto&& prettyName = PRETTY_FUNC;
     // return prettyName;
     auto name = CSlice( PRETTY_FUNC );
@@ -167,6 +182,7 @@ auto operator<< (std::ostream& os, TypeOf<T> type) -> std::ostream& {
     os << detail::type_name<T>();
     return os;
 }
+
 
 #if defined PRETTY_FUNC
 #   undef PRETTY_FUNC

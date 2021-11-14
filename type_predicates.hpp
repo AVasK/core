@@ -1,5 +1,5 @@
-//TODO: ADD C++ std-version checks: #if CPP_V >= 2017, e.t.c
 #pragma once
+
 #include <type_traits>
 
 namespace core {
