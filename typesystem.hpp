@@ -21,29 +21,49 @@
 namespace core {
 inline namespace typesystem {
     
-#if __cplusplus/100 >= 2017
-using namespace core::type_predicates;
-#endif 
 
 template <typename T>
 struct TypeOf {
     using type = T;
-    using raw_T = typename std::remove_reference<T>::type;
 
+    constexpr auto remove_cv() const noexcept -> TypeOf<typename std::remove_cv<type>::type> { return {}; }
+    constexpr auto add_cv() const noexcept -> TypeOf<typename std::add_cv<type>::type> { return {}; }
 
-    constexpr auto remove_ref() const noexcept -> TypeOf<typename std::remove_reference<T>::type> {return {};}
+    constexpr auto remove_const() const noexcept -> TypeOf<typename std::remove_const<type>::type> { return {}; }
+    constexpr auto add_const() const noexcept -> TypeOf<typename std::add_const<type>::type> { return {}; }
+
+    constexpr auto remove_volatile() const noexcept -> TypeOf<typename std::remove_volatile<type>::type> { return {}; }
+    constexpr auto add_volatile() const noexcept -> TypeOf<typename std::add_volatile<type>::type> { return {}; }
+
+    constexpr auto remove_reference() const noexcept -> TypeOf<typename std::remove_reference<type>::type> {return {};}
+    constexpr auto add_lvalue_reference() const noexcept -> TypeOf<typename std::add_lvalue_reference<type>::type> { return {}; }
+    constexpr auto add_rvalue_reference() const noexcept -> TypeOf<typename std::add_rvalue_reference<type>::type> { return {}; }
+    // common shortcuts
+    constexpr auto remove_ref() const noexcept -> TypeOf<typename std::remove_reference<type>::type> {return {};}
+    constexpr auto add_lvalue_ref() const noexcept -> TypeOf<typename std::add_lvalue_reference<type>::type> { return {}; }
+    constexpr auto add_rvalue_ref() const noexcept -> TypeOf<typename std::add_rvalue_reference<type>::type> { return {}; }
+
+    constexpr auto remove_pointer() const noexcept -> TypeOf<typename std::remove_pointer<type>::type> { return {}; }
+    constexpr auto add_pointer() const noexcept -> TypeOf<typename std::add_pointer<type>::type> { return {}; }
+    // common shortcuts
+    constexpr auto remove_ptr() const noexcept -> TypeOf<typename std::remove_pointer<type>::type> { return {}; }
+    constexpr auto add_ptr() const noexcept -> TypeOf<typename std::add_pointer<type>::type> { return {}; }
+
+    constexpr auto decay() const noexcept -> TypeOf<typename std::decay<type>::type> { return {}; }
+
+    constexpr auto raw() const noexcept -> TypeOf<typename std::remove_reference<typename std::remove_cv<type>::type>::type> { return {}; }
 
 
     #if __cplusplus/100 >= 2017
     template <class P,
-        typename=typename std::enable_if<std::is_base_of<core::TypePredicate, P>::value>::type 
+        typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
     >
     constexpr bool satisfies(P) const noexcept {
         return P::template eval<type>();
     }
 
     template <class P, 
-        typename=typename std::enable_if<std::is_base_of<core::TypePredicate, P>::value>::type 
+        typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
     >
     constexpr bool operator() (P) const noexcept {
         return P::template eval<type>();

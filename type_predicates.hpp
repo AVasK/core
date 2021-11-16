@@ -3,6 +3,8 @@
 #include <type_traits>
 
 namespace core {
+inline namespace typesystem {
+namespace detail {
 
 struct TypePredicate {};
 
@@ -14,6 +16,16 @@ struct bind_predicate : TypePredicate {
         return Predicate<T,Ts...>::value;
     }
 };
+
+template <template<typename...> class Predicate, typename... Ts>
+struct rbind_predicate : TypePredicate {
+    template <typename T>
+    static constexpr 
+    bool eval() {
+        return Predicate<Ts...,T>::value;
+    }
+};
+
 
 template <class P>
 struct Neg : TypePredicate {
@@ -48,37 +60,42 @@ struct Or : TypePredicate {
     }
 };
 
+}//namespace detail
+
 
 template <class P1, class P2,
-    typename = std::enable_if_t<std::is_base_of<TypePredicate, P1>::value>,
-    typename = std::enable_if_t<std::is_base_of<TypePredicate, P2>::value>
+    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
+    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
 >
 inline
-constexpr auto operator& (P1, P2) noexcept -> And<P1,P2> {
-    return And<P1,P2>();
+constexpr auto operator& (P1, P2) noexcept -> detail::And<P1,P2> {
+    return detail::And<P1,P2>();
 } 
 
 
 template <class P1, class P2,
-    typename = std::enable_if_t<std::is_base_of<TypePredicate, P1>::value>,
-    typename = std::enable_if_t<std::is_base_of<TypePredicate, P2>::value>
+    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
+    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
 >
 inline
-constexpr auto operator| (P1, P2) noexcept -> Or<P1,P2> {
-    return Or<P1,P2>();
+constexpr auto operator| (P1, P2) noexcept -> detail::Or<P1,P2> {
+    return detail::Or<P1,P2>();
 } 
 
 
-template <class Pred>
+template <class Pred,
+    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, Pred>::value>
+>
 inline
-constexpr auto operator! (Pred p) -> Neg<Pred> {
+constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
     return {p};
 } 
 
 
-// PREDICATES:
-inline namespace type_predicates {
+using detail::bind_predicate;
+using detail::rbind_predicate;
 
+// PREDICATES:
 inline constexpr auto is_void = bind_predicate<std::is_void>();
 
 inline constexpr auto is_null_pointer = bind_predicate<std::is_null_pointer>();
@@ -157,6 +174,9 @@ inline constexpr auto is = bind_predicate<std::is_same, Other>();
 template <typename Sub>
 inline constexpr auto is_base_of = bind_predicate<std::is_base_of, Sub>();
 
+template <typename Base>
+inline constexpr auto is_subclass_of = rbind_predicate<std::is_base_of, Base>();
+
 template <class... Args>
 inline constexpr auto is_constructible_from = bind_predicate<std::is_constructible, Args...>();
 
@@ -185,5 +205,5 @@ inline constexpr auto is_trivially_move_constructible = bind_predicate<std::is_t
 inline constexpr auto is_nothrow_move_constructible = bind_predicate<std::is_nothrow_move_constructible>();
 
 
-} //namespace type_predicates
+} //namespace typesystem
 } //namespace core
