@@ -13,7 +13,7 @@
 #endif
 
 
-#if __cplusplus/100 >= 2017
+#if __cplusplus/100 >= 2014
 #include "type_predicates.hpp"
 #endif
 
@@ -54,7 +54,7 @@ struct TypeOf {
     constexpr auto raw() const noexcept -> TypeOf<typename std::remove_reference<typename std::remove_cv<type>::type>::type> { return {}; }
 
 
-    #if __cplusplus/100 >= 2017
+    #if __cplusplus/100 >= 2014
     template <class P,
         typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
     >
@@ -77,12 +77,10 @@ struct TypeOf {
 };
 
 
-#if __cplusplus/100 >= 2017
+#if __cplusplus/100 >= 2014
 template <typename T>
-inline constexpr auto Type = TypeOf<T>{};
-#elif __cplusplus/100 >= 2014
-template <typename T>
-static constexpr auto Type = TypeOf<T>{};
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Type = TypeOf<T>{};
 #endif
 
 
