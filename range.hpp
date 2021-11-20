@@ -122,12 +122,12 @@ public:
     : index{ start_index }
     {}
     
-    CORE_CPP14_CONSTEXPR auto operator++() -> RangeIterator& {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator++() -> RangeIterator& {
         index += 1;
         return *this;
     }
     
-    CORE_CPP14_CONSTEXPR auto operator++(int _) -> RangeIterator {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator++(int _) -> RangeIterator {
         auto temp = *this;
         this->operator++();
         return temp;
@@ -141,7 +141,7 @@ public:
         return !(*this == other);
     }
     
-    CORE_CPP14_CONSTEXPR auto operator*() const -> T {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator*() const -> T {
         return index;
     }
 private:
@@ -159,12 +159,12 @@ public:
     
     // operators to support range-based for:
     // 1. operator++()
-    CORE_CPP14_CONSTEXPR auto operator++ () -> StrideRangeIterator& {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator++ () -> StrideRangeIterator& {
         current += step;
         return *this;
     }
     
-    CORE_CPP14_CONSTEXPR auto operator++ (int _) -> StrideRangeIterator {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator++ (int _) -> StrideRangeIterator {
         auto temp = current;
         current += step;
         return temp;
@@ -174,7 +174,7 @@ public:
         return (step > 0) ? (current < other.current) : (current > other.current);
     }
     
-    CORE_CPP14_CONSTEXPR auto operator*() -> T& {
+    CORE_CPP14_CONSTEXPR_FUNC auto operator*() -> T& {
         return this->current;
     }
     
