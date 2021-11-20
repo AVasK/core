@@ -85,18 +85,18 @@ constexpr auto Type = TypeOf<T>{};
 
 
 template <typename T>
-inline constexpr 
+constexpr 
 auto type(T&&) noexcept -> TypeOf<T&&> { return {}; };
 
 
 template <class T1, class T2>
-inline constexpr 
+constexpr 
 bool operator== (TypeOf<T1>, TypeOf<T2>) noexcept {
     return std::is_same<T1,T2>::value;
 }
 
 template <class T1, class T2>
-inline constexpr 
+constexpr 
 bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
     return !(t1 == t2);
 }
@@ -114,7 +114,6 @@ constexpr size_t slen(const char (&str) [N]) {
 #if __cplusplus/100 >= 2014
 inline
 namespace impl_cpp14{
-    inline
     constexpr size_t pslen(const char * const ps) {
         for (size_t i=0; ;++i) {
             if (ps[i] == '\0') return i;
@@ -125,7 +124,6 @@ namespace impl_cpp14{
 inline
 #endif
 namespace impl_cpp11{
-    inline
     constexpr size_t pslen(const char* const ps, size_t idx=0) {
         return (ps[idx] == '\0') ?
         idx : pslen(ps, idx+1);
@@ -133,7 +131,6 @@ namespace impl_cpp11{
 }
 
 template <size_t N>
-inline
 constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
     return (str[idx] == c || idx >= N) ?
     idx
@@ -143,7 +140,6 @@ constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
 }
 
 template <size_t N>
-inline
 constexpr size_t skipSpace(const char (&str)[N], size_t idx=0) {
     return (!std::isspace( (int)str[idx] )) ?
         idx
@@ -180,7 +176,7 @@ struct CSlice {
 
 template <typename T>
 inline 
-CORE_CPP14_CONSTEXPR
+CORE_CPP14_CONSTEXPR_FUNC
 auto type_name() -> CSlice {
     auto&& prettyName = PRETTY_FUNC;
     // return prettyName;
