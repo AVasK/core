@@ -79,7 +79,10 @@ struct TypeOf {
 
 #if __cplusplus/100 >= 2017
 template <typename T>
-inline auto Type = TypeOf<T>{};
+inline constexpr auto Type = TypeOf<T>{};
+#elif __cplusplus/100 >= 2014
+template <typename T>
+static constexpr auto Type = TypeOf<T>{};
 #endif
 
 
