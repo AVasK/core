@@ -9,3 +9,9 @@
 #else
 #   define CORE_CPP14_CONSTEXPR
 #endif
+
+#if __cplusplus/100 >= 2017
+#   define CORE_CPP17_INLINE_VARIABLE inline
+#else
+#   define CORE_CPP17_INLINE_VARIABLE
+#endif

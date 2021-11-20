@@ -21,21 +21,18 @@ struct identity {
 
 
 template <typename... Ts>
-struct typelist {};
+struct typelist;// {}; // We don't even need to actually define it :)
 
 
 // select
 template <bool Condition, class ThenType, class ElseType>
-struct select_impl;
+struct select_impl {
+    using type = ElseType;
+};
 
 template <class ThenType, class ElseType>
 struct select_impl<true, ThenType, ElseType> {
     using type = ThenType;
-};
-
-template <class ThenType, class ElseType>
-struct select_impl<false, ThenType, ElseType> {
-    using type = ElseType;
 };
 
 template <bool Cond, typename T, typename E>
@@ -43,6 +40,17 @@ using select = typename select_impl<Cond, T, E>::type;
 
 template <class Cond, typename T, typename E>
 using select_if = typename select_impl<bool(Cond::value), T,E>::type;
+
+
+// defer
+template <metafunc F, typename... Args>
+struct defer_impl {
+    using eval = F<Args...>;
+};
+
+template <metafunc F, typename... Args>
+using defer = defer_impl<F, Args...>;
+
 
 // prepend
 template <class List, typename T>
@@ -77,28 +85,28 @@ using append = typename append_impl<List,T>::type;
 
 // map
 template <metafunc F, class List>
-struct map_impl;
+struct apply_impl;
 
 template <metafunc F, metafunc List, typename... Ts>
-struct map_impl<F, List<Ts...>> {
+struct apply_impl<F, List<Ts...>> {
     using type = F<Ts...>;
 };
 
 template <metafunc F, class List>
-using map = typename map_impl<F, List>::type;
+using apply = typename apply_impl<F, List>::type;
 
 
 //transform
 template <metafunc F, class List>
-struct transform_impl;
+struct map_impl;
 
 template <metafunc F, metafunc List, typename... Ts>
-struct transform_impl< F, List<Ts...> >{
+struct map_impl< F, List<Ts...> >{
     using type = List< F<Ts>... >;
 };
 
 template <metafunc F, class List>
-using transform = typename transform_impl<F,List>::type;
+using map = typename map_impl<F,List>::type;
 
 // maybe move impl to separate namespaces?
 // mb even versioned for different cpp_stds?
@@ -155,21 +163,20 @@ using concat = typename concat_impl<Lists...>::type;
 
 
 template <class List, class Value>
-struct contains_impl;
+struct set_contains_impl;
 
 template <class List, class Value>
-using contains = typename contains_impl<List, Value>::type;
+using set_contains = typename set_contains_impl<List, Value>::type;
 
 template <
     template <class...> class List,
     typename... Ts,
     class Value
 >
-struct contains_impl< List<Ts...>, Value > {
+struct set_contains_impl< List<Ts...>, Value > {
     struct L : identity<Ts>... {};
     using type = std::is_base_of<identity<Value>, L>;
 };
-
 
 constexpr size_t sum() noexcept { return 0; }
 
@@ -177,6 +184,7 @@ template <typename T, typename... Ts>
 constexpr size_t sum(T v, Ts... vs) noexcept {
     return v + sum(vs...);
 }
+
 
 #undef metafunc
 } //namespace meta
