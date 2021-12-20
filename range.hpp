@@ -44,6 +44,11 @@ constexpr auto range(T start, T end, T step) noexcept -> StrideRange<T>
 }
 
     
+/**
+ * @brief A stride-1 range: [begin, end)
+ * 
+ * @tparam T 
+ */
 template <typename T>
 class Range {
 public:

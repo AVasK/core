@@ -275,19 +275,31 @@ auto operator<< (std::ostream& os, TypeOf<T> type) -> std::ostream& {
 template <typename T, typename... Ts>
 inline
 auto operator<< (std::ostream& os, TypeList<T, Ts...> types) -> std::ostream& {
+#if __cplusplus/100 >= 2017
     if constexpr (sizeof...(Ts) > 0) {
         os << detail::type_name<T>() << ", " << Types<Ts...>;
     } else {
         os << detail::type_name<T>();
     }
+#else
+    os << detail::type_name<T>() << ", " << Types<Ts...>;
+#endif
     return os;
 }
 
-// template <>
-// inline
-// auto operator<< (std::ostream& os, TypeList<> types) -> std::ostream& {
-//     return os;
-// }
+#if __cplusplus/100 < 2017
+inline
+auto operator<< (std::ostream& os, TypeList<> types) -> std::ostream& {
+    return os;
+}
+#endif
+
+
+template <typename... Ts, typename... Us>
+inline
+constexpr auto operator+ (TypeList<Ts...>, TypeList<Us...>) -> TypeList<Ts..., Us...> {
+    return {};
+}
 
 
 #if defined PRETTY_FUNC
