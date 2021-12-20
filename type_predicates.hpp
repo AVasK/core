@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include "macros.hpp"
 
 namespace core {
 inline namespace typesystem {
@@ -88,7 +89,7 @@ template <class Pred,
 >
 inline
 constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
-    return {p};
+    return detail::Neg<Pred>{};
 } 
 
 using detail::bind_predicate;

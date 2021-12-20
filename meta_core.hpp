@@ -186,5 +186,42 @@ constexpr size_t sum(T v, Ts... vs) noexcept {
 }
 
 
+// Any & All boolean funcs beta [bound to change]
+// ALL
+// template <bool... Vs>
+// constexpr bool all() noexcept {
+//     constexpr bool flag[] = {Vs...};
+//     for (size_t i = 0; i < sizeof...(Vs); ++i) {
+//         if (!flag[i]) { return false; }
+//     }
+//     return true;
+// }
+
+constexpr bool all(std::initializer_list<bool> vs) noexcept {
+    for (auto&& flag : vs) {
+        if (!flag) { return false; }
+    }
+    return true;
+}
+
+
+// ANY
+template <bool... Vs>
+constexpr bool any() noexcept {
+    constexpr bool flag[] = {Vs...};
+    for (size_t i = 0; i < sizeof...(Vs); ++i) {
+        if (flag[i]) { return true; }
+    }
+    return false;
+}
+
+constexpr bool any(std::initializer_list<bool> vs) noexcept {
+    for (auto&& flag : vs) {
+        if (flag) { return true; }
+    }
+    return false;
+}
+
+
 #undef metafunc
 } //namespace meta

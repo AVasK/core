@@ -5,6 +5,7 @@
 #include <cctype> // isspace
 #include "compiler_detect.hpp"
 #include "macros.hpp"
+#include "meta_core.hpp"
 
 #if defined CORE_GCC || defined CORE_CLANG
 #   define PRETTY_FUNC __PRETTY_FUNCTION__
@@ -100,6 +101,75 @@ constexpr
 bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
     return !(t1 == t2);
 }
+
+
+
+// Types
+template <typename... Ts>
+struct TypeList {
+
+    constexpr auto remove_cv() const noexcept -> TypeList<typename std::remove_cv<Ts>::type...> { return {}; }
+    constexpr auto add_cv() const noexcept -> TypeList<typename std::add_cv<Ts>::type...> { return {}; }
+
+    constexpr auto remove_const() const noexcept -> TypeList<typename std::remove_const<Ts>::type...> { return {}; }
+    constexpr auto add_const() const noexcept -> TypeList<typename std::add_const<Ts>::type...> { return {}; }
+
+    constexpr auto remove_volatile() const noexcept -> TypeList<typename std::remove_volatile<Ts>::type...> { return {}; }
+    constexpr auto add_volatile() const noexcept -> TypeList<typename std::add_volatile<Ts>::type...> { return {}; }
+
+    constexpr auto remove_reference() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
+    constexpr auto add_lvalue_reference() const noexcept -> TypeList<typename std::add_lvalue_reference<Ts>::type...> { return {}; }
+    constexpr auto add_rvalue_reference() const noexcept -> TypeList<typename std::add_rvalue_reference<Ts>::type...> { return {}; }
+    // common shortcuts
+    constexpr auto remove_ref() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
+    constexpr auto add_lvalue_ref() const noexcept -> TypeList<typename std::add_lvalue_reference<Ts>::type...> { return {}; }
+    constexpr auto add_rvalue_ref() const noexcept -> TypeList<typename std::add_rvalue_reference<Ts>::type...> { return {}; }
+
+    constexpr auto remove_pointer() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
+    constexpr auto add_pointer() const noexcept -> TypeList<typename std::add_pointer<Ts>::type...> { return {}; }
+    // common shortcuts
+    constexpr auto remove_ptr() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
+    constexpr auto add_ptr() const noexcept -> TypeList<typename std::add_pointer<Ts>::type...> { return {}; }
+
+    constexpr auto decay() const noexcept -> TypeList<typename std::decay<Ts>::type...> { return {}; }
+
+    constexpr auto raw() const noexcept -> TypeList<typename std::remove_reference<typename std::remove_cv<Ts>::type>::type...> { return {}; }
+
+
+    #if __cplusplus/100 >= 2014
+    
+    template <class P, 
+        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+    >
+    constexpr bool all (P) const noexcept {
+        return meta::all({ P::template eval<Ts>()... });
+    }
+
+    
+    template <class P, 
+        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+    >
+    constexpr bool any (P) const noexcept {
+        return meta::any({ P::template eval<Ts>()... });
+    }
+
+
+    template <class P, 
+        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+    >
+    constexpr bool none (P) const noexcept {
+        return !meta::any({ P::template eval<Ts>()... });
+    }
+
+    #endif
+};
+
+#if __cplusplus/100 >= 2014
+template <typename... Ts>
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Types = TypeList<Ts...>{};
+#endif
+
 
 
 // Printing the TypeOf<T>
@@ -199,6 +269,25 @@ auto operator<< (std::ostream& os, TypeOf<T> type) -> std::ostream& {
     os << detail::type_name<T>();
     return os;
 }
+
+
+
+template <typename T, typename... Ts>
+inline
+auto operator<< (std::ostream& os, TypeList<T, Ts...> types) -> std::ostream& {
+    if constexpr (sizeof...(Ts) > 0) {
+        os << detail::type_name<T>() << ", " << Types<Ts...>;
+    } else {
+        os << detail::type_name<T>();
+    }
+    return os;
+}
+
+// template <>
+// inline
+// auto operator<< (std::ostream& os, TypeList<> types) -> std::ostream& {
+//     return os;
+// }
 
 
 #if defined PRETTY_FUNC
