@@ -136,6 +136,17 @@ struct TypeList {
     constexpr auto raw() const noexcept -> TypeList<typename std::remove_reference<typename std::remove_cv<Ts>::type>::type...> { return {}; }
 
 
+    // transformations on types
+    constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
+
+    constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
+
+    template <template <typename> class MetaFunc>
+    constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }
+
+    // template <template <typename> class MetaFunc>
+    // constexpr auto filter() const noexcept -> TypeList<meta::filter<MetaFunc, meta::typelist<Ts...>> { return {}; }
+
     #if __cplusplus/100 >= 2014
     
     template <class P, 

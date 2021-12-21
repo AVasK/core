@@ -19,9 +19,45 @@ struct identity {
     using type = T;
 };
 
+struct nothing;
+
 
 template <typename... Ts>
 struct typelist;// {}; // We don't even need to actually define it :)
+
+template <typename... Ts>
+struct head_impl;
+
+template <typename T, typename... Ts>
+struct head_impl<T,Ts...> {
+    using type = T;
+};
+
+template <>
+struct head_impl<> {
+    using type = nothing;
+};
+
+
+template <typename... Ts>
+struct tail_impl;
+
+template <typename T, typename... Ts>
+struct tail_impl<T,Ts...> {
+    using type = typelist<Ts...>;
+};
+
+template <>
+struct tail_impl<> {
+    using type = typelist<>;
+};
+
+
+template <typename... Ts>
+using head = typename head_impl<Ts...>::type;
+
+template <typename... Ts>
+using tail = typename tail_impl<Ts...>::type;
 
 
 // select
