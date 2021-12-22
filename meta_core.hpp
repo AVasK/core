@@ -22,6 +22,15 @@ struct identity {
     using type = T;
 };
 
+template <typename Ret>
+struct return_type {
+    template <typename T>
+    using type = Ret;
+};
+
+template <typename Ret>
+using return_t = typename return_type<Ret>::type;
+
 struct nothing;
 
 
@@ -85,6 +94,7 @@ using select_if = typename select_impl<bool(Cond::value), T,E>::type;
 template <metafunc F, typename... Args>
 struct defer_impl {
     using eval = F<Args...>;
+    using type = F<Args...>;
 };
 
 template <metafunc F, typename... Args>

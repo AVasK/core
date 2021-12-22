@@ -80,12 +80,12 @@ struct TypeOf {
     template <
         typename Case,
         typename... Cases,
-        meta::require< Types<Case, Cases...>.all(core::is_subclass_of<core::detail::TypeTransformation>) >
+        typename=meta::require< Types<Case, Cases...>.all( core::is_subclass_of<core::detail::TypeCase> )>
     >
     constexpr auto match(Case c, Cases... cases) const noexcept {
-        if constexpr ( this->satisfies(c.condition) ) {
-            this->apply_transform( c.morph() );
-            return *this;
+        if constexpr ( c.template test<T>() ) {
+            using new_T = typename Case::template apply< T >::type;
+            return Type<new_T>;
         } else {
             return this->match(cases...);
         }
@@ -210,6 +210,19 @@ struct TypeList {
 
     #endif
 };
+
+
+// TypeCase construction
+template <
+    typename T, 
+    typename Predicate,
+    typename = meta::require< 
+                std::is_base_of<detail::TypePredicate, Predicate>::value
+    >
+>
+constexpr auto operator>> (Predicate p, TypeOf<T> t) noexcept {
+    return detail::TypeChange<Predicate, T>();
+}
 
 
 // Printing the TypeOf<T>

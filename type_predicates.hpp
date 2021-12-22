@@ -8,17 +8,67 @@ inline namespace typesystem {
 namespace detail {
 
 struct TypePredicate {};
+struct TypeCase {};
+
 struct TypeTransformation {};
 
-template <
-    typename Transform,
-    typename Predicate,  
-    typename = std::enable_if_t< std::is_base_of<TypePredicate, Predicate>::value >  
->
-struct TypeMorph : TypeTransformation {
-    Predicate condition;
-    Transform morph;
+template <template <typename> class F>
+struct type_transform : TypeTransformation {
+    template <typename T>
+    using apply = F<T>;
 };
+
+
+template <
+    typename Predicate,  
+    typename Transform,
+    typename = meta::require< 
+        std::is_base_of<TypePredicate, Predicate>::value 
+        &&
+        std::is_base_of<TypeTransformation, Transform>::value
+    >  
+>
+struct TypeMorph : TypeCase {
+    template <typename T>
+    constexpr bool test() {
+        return Predicate::template eval<T>();
+    }
+
+    template <typename T>
+    using apply = typename Transform::template apply<T>;
+};
+
+
+template <
+    typename Predicate,  
+    typename T,
+    typename = meta::require< 
+        std::is_base_of<TypePredicate, Predicate>::value 
+    >  
+>
+struct TypeChange : TypeCase {
+    template <typename X>
+    constexpr bool test() {
+        return Predicate::template eval<X>();
+    }
+
+    template <typename>
+    using apply = meta::identity<T>;
+};
+
+
+template <
+    typename Transform, 
+    typename Predicate,
+    typename = meta::require< 
+                std::is_base_of<TypeTransformation, Transform>::value
+                &&
+                std::is_base_of<TypePredicate, Predicate>::value
+    >
+>
+constexpr auto operator>> (Predicate condition, Transform morph) noexcept {
+    return TypeMorph<Predicate, Transform>{};
+}
 
 
 template <template<typename...> class Predicate>
@@ -112,6 +162,11 @@ inline
 constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
     return detail::Neg<Pred>{};
 } 
+
+
+template <template <typename> class F>
+constexpr static auto transform = detail::type_transform<F>();
+
 
 using detail::bind_predicate;
 using detail::rbind_predicate;
