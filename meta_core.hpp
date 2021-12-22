@@ -22,14 +22,8 @@ struct identity {
     using type = T;
 };
 
-template <typename Ret>
-struct return_type {
-    template <typename T>
-    using type = Ret;
-};
-
-template <typename Ret>
-using return_t = typename return_type<Ret>::type;
+template <typename T>
+struct always_true : std::true_type {};
 
 struct nothing;
 

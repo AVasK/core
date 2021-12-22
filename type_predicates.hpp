@@ -167,6 +167,8 @@ constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
 template <template <typename> class F>
 constexpr static auto transform = detail::type_transform<F>();
 
+constexpr static auto otherwise = detail::bind_predicate<meta::always_true>();
+
 
 using detail::bind_predicate;
 using detail::rbind_predicate;
