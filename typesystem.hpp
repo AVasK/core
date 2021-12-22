@@ -21,7 +21,27 @@
 
 namespace core {
 inline namespace typesystem {
-    
+
+
+template <typename T>
+struct TypeOf;  
+
+#if __cplusplus/100 >= 2014
+template <typename T>
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Type = TypeOf<T>{};
+#endif
+
+
+template <typename... Ts>
+struct TypeList;
+
+#if __cplusplus/100 >= 2014
+template <typename... Ts>
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Types = TypeList<Ts...>{};
+#endif
+
 
 template <typename T>
 struct TypeOf {
@@ -55,7 +75,23 @@ struct TypeOf {
     constexpr auto raw() const noexcept -> TypeOf<typename std::remove_reference<typename std::remove_cv<type>::type>::type> { return {}; }
 
 
-    #if __cplusplus/100 >= 2014
+#if __cplusplus/100 >= 2014
+    // Pattern matching
+    template <
+        typename Case,
+        typename... Cases,
+        meta::require< Types<Case, Cases...>.all(core::is_subclass_of<core::detail::TypeTransformation>) >
+    >
+    constexpr auto match(Case c, Cases... cases) const noexcept {
+        if constexpr ( this->satisfies(c.condition) ) {
+            this->apply_transform( c.morph() );
+            return *this;
+        } else {
+            return this->match(cases...);
+        }
+    }
+
+    
     template <class P,
         typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
     >
@@ -69,20 +105,19 @@ struct TypeOf {
     constexpr bool operator() (P) const noexcept {
         return P::template eval<type>();
     }
-    #endif
+#endif
+
+private:
+    template <typename Transformation>
+    constexpr auto apply_transform(Transformation t) {
+        return Type<decltype(t(*this))>;
+    }
 
     // TODO: Add conversion to string
     // operator std::string () {
     //     return type_name<T>();
     // }
 };
-
-
-#if __cplusplus/100 >= 2014
-template <typename T>
-CORE_CPP17_INLINE_VARIABLE
-constexpr auto Type = TypeOf<T>{};
-#endif
 
 
 template <typename T>
@@ -147,6 +182,7 @@ struct TypeList {
     // template <template <typename> class MetaFunc>
     // constexpr auto filter() const noexcept -> TypeList<meta::filter<MetaFunc, meta::typelist<Ts...>> { return {}; }
 
+
     #if __cplusplus/100 >= 2014
     
     template <class P, 
@@ -174,13 +210,6 @@ struct TypeList {
 
     #endif
 };
-
-#if __cplusplus/100 >= 2014
-template <typename... Ts>
-CORE_CPP17_INLINE_VARIABLE
-constexpr auto Types = TypeList<Ts...>{};
-#endif
-
 
 
 // Printing the TypeOf<T>

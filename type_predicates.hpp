@@ -8,6 +8,27 @@ inline namespace typesystem {
 namespace detail {
 
 struct TypePredicate {};
+struct TypeTransformation {};
+
+template <
+    typename Transform,
+    typename Predicate,  
+    typename = std::enable_if_t< std::is_base_of<TypePredicate, Predicate>::value >  
+>
+struct TypeMorph : TypeTransformation {
+    Predicate condition;
+    Transform morph;
+};
+
+
+template <template<typename...> class Predicate>
+struct as_predicate : TypePredicate {
+    template <typename T>
+    static constexpr 
+    bool eval() {
+        return Predicate<T>::value;
+    }
+};
 
 template <template<typename...> class Predicate, typename... Ts>
 struct bind_predicate : TypePredicate {

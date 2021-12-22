@@ -13,6 +13,9 @@ struct enable_if<true,T> {
     using type = T;
 };
 
+template <bool Cond>
+using require = typename std::enable_if<Cond>::type;
+
 
 template <typename T>
 struct identity {
