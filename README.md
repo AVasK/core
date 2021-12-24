@@ -109,3 +109,20 @@ constexpr auto $a = detail::Arg<0>();
 ```
 
 core::lambda::detail::Arg<...>() provides a way to extend to more arguments
+
+
+## core::range
+    no inner namespace
+
+Use Python-style for-loops instead of C/C++'s `for (_;_;_)`
+```C++
+using core::range;
+
+for (auto i : range(end)) {...}
+for (auto i : range(start, end)) {...}
+for (auto i : range(start, end, step)) {...}
+```
+    unlike Python ranges doesn't have negative indexing, but has some functions instead :)
+```C++
+for (auto i : range(..., ..., ...).reverse()) {...}
+```
