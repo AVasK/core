@@ -90,6 +90,10 @@ struct TypeOf {
             return this->match(cases...);
         }
     }
+    
+    constexpr auto match() const noexcept {
+        return *this;
+    }
 
     
     template <class P,

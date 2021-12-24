@@ -71,15 +71,7 @@ constexpr auto operator>> (Predicate condition, Transform morph) noexcept {
 }
 
 
-template <template<typename...> class Predicate>
-struct as_predicate : TypePredicate {
-    template <typename T>
-    static constexpr 
-    bool eval() {
-        return Predicate<T>::value;
-    }
-};
-
+// Predicate binding
 template <template<typename...> class Predicate, typename... Ts>
 struct bind_predicate : TypePredicate {
     template <typename T>
@@ -99,6 +91,7 @@ struct rbind_predicate : TypePredicate {
 };
 
 
+// Logical operations on predicates
 template <class P>
 struct Neg : TypePredicate {
     template <class T>
