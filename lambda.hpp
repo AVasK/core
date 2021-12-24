@@ -11,16 +11,19 @@ namespace core {
 template <typename F1, typename F2>                 \
 struct FName : FGen {                               \
     F1 _f1; F2 _f2;                                 \
-    FName(F1 f1, F2 f2)                             \
+    constexpr FName(F1 f1, F2 f2)                   \
     : _f1 {f1}                                      \
     , _f2 {f2}                                      \
     {}                                              \
                                                     \
     template <typename... Ts>                       \
-    auto operator() (Ts... args) -> bool {          \
+    constexpr                                       \
+    auto operator() (Ts... args) const              \
+    -> bool {                                       \
         return _f1(args...) cmpSign _f2(args...);   \
     }                                               \
 };                                                  \
+                                                    \
                                                     \
 template <typename F1, typename F2,                 \
 typename = typename std::enable_if<(                \
@@ -28,6 +31,7 @@ typename = typename std::enable_if<(                \
     &&                                              \
     std::is_base_of<FGen, F2>::value                \
 )>::type>                                           \
+inline constexpr                                    \
 auto operator cmpSign (F1 f1, F2 f2)                \
  -> FName<F1,F2>                                    \
 {                                                   \
@@ -35,6 +39,7 @@ auto operator cmpSign (F1 f1, F2 f2)                \
 }                                                   \
                                                     \
 template <typename F, typename T>                   \
+inline constexpr                                    \
 auto operator cmpSign (F f, T value)                \
 -> typename std::enable_if<                         \
     (std::is_base_of<FGen, F>::value                \
@@ -51,13 +56,14 @@ auto operator cmpSign (F f, T value)                \
 template <typename F1, typename F2>                 \
 struct FName : FGen {                               \
     F1 _f1; F2 _f2;                                 \
-    FName(F1 f1, F2 f2)                             \
+    constexpr FName(F1 f1, F2 f2)                   \
     : _f1{f1}                                       \
     , _f2{f2}                                       \
     {}                                              \
                                                     \
     template <typename... Ts>                       \
-    auto operator() (Ts... args)                    \
+    inline constexpr                                \
+    auto operator() (Ts... args) const              \
     -> decltype(std::declval<F1>()(args...) opSign std::declval<F2>()(args...)) \
     {                                               \
         return _f1(args...) opSign _f2(args...);    \
@@ -70,6 +76,7 @@ typename = typename std::enable_if<(                \
     &&                                              \
     std::is_base_of<FGen, F2>::value                \
 )>::type>                                           \
+inline constexpr                                    \
 auto operator opSign (F1 f1, F2 f2)                 \
  -> FName<F1,F2>                                    \
 {                                                   \
@@ -77,6 +84,7 @@ auto operator opSign (F1 f1, F2 f2)                 \
 }                                                   \
                                                     \
 template <typename F, typename T>                   \
+inline constexpr                                    \
 auto operator opSign (F f, T value)                 \
 -> typename std::enable_if<                         \
     (std::is_base_of<FGen, F>::value                \
@@ -134,7 +142,7 @@ struct Arg : FGen {
 
 template <typename T>
 struct Value : FGen {
-    Value(T val) : value{val} {}
+    constexpr Value(T val) : value{val} {}
 
     template <typename... Ts>
     constexpr T operator() (Ts const&...) const noexcept 
@@ -169,11 +177,11 @@ namespace numeric_args {
     auto $4 = detail::Arg<4>();
 }
 
-auto $a = detail::Arg<0>();
-auto $b = detail::Arg<1>();
-auto $c = detail::Arg<2>();
-auto $d = detail::Arg<3>();
-auto $e = detail::Arg<4>();
+constexpr auto $a = detail::Arg<0>();
+constexpr auto $b = detail::Arg<1>();
+constexpr auto $c = detail::Arg<2>();
+constexpr auto $d = detail::Arg<3>();
+constexpr auto $e = detail::Arg<4>();
 
 } // namespace lambda
 } //namespace core
