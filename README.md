@@ -1,18 +1,21 @@
 # CORE
 
 ## core::typesystem
-```C++
-using namespace core::typesystem
-```
 
-### Type:
+> ```C++
+> using namespace core::typesystem
+> ```
+
+> #### C++14 is recommended for this submodule. 
+
+### Working with a single Type
 ```C++
 struct TypeOf<T> 
 Type<T>  <->  TypeOf<T>( );
 ```
 
-- For starters, you can easily compare types like that
-    ( and use those anywhere you wish, since they're constexpr )
+- For starters, you can easily compare types like that  
+( and use those anywhere you wish, since they're constexpr )
 ```C++
 Type<X> == Type<Y> 
 Type<X> != Type<Y>
@@ -27,17 +30,17 @@ std::is_same_v<X, Y>
 - You can get the type of the variable like that
 ```C++
 int x;
-constexpr auto tx = type(x);
+constexpr auto t1 = type(x);
 static_assert( t1( is_lvalue_reference ), "");
 
-constexpr auto t1 = type(1);
-static_assert( tx( is_rvalue_reference ), "");
+constexpr auto t2 = type(1);
+static_assert( t2( is_rvalue_reference ), "");
 ```
 
-- you can *print* the types!
+- You can **print** the types!
 ```C++
 std::cout << Type<float&> << "\n" //>>> float&
-          << type(x) << "\n";     //>>> int& (type gets the type w.r.t l- and r-valuedness)
+          << type(x) << "\n";     //>>> int& (type() gets the type w.r.t l- and r-valuedness)
 ```
     the PRETTY_FUNCTION of clang/gcc is used for printing
 
@@ -64,7 +67,7 @@ constexpr auto is_subclass_of = rbind_predicate<std::is_base_of, X>();
 
 ```
 
-- Finally, you can do *PATTERN MATCHING* on types! 
+- Finally, you can do **PATTERN MATCHING** on types! 
     <!> Pattern matching matches the first alternative and returns, there is no fallthrough.
 ```C++
 Type<A>.match(
@@ -91,7 +94,7 @@ You can:
 - [x] test if *all*, *any* or *none* of the types satisfy some Predicate.
 - [x] transform your TypeList<...>
 - [x] filter it
-- [x] use pattern matching on it!
+- [x] use pattern matching on it
 - [ ] iterate via for_each (on TODO list)
 
 ### Examples:
@@ -117,7 +120,7 @@ constexpr auto ts = Types<int, float, void, double, bool>.filter(!is_void).match
 ); // -> Types< unsigned int, float, double, bool >;
 ```
 
-## NOTE: Extracting the type when crossing the compile-time and runtime boundary
+### NOTE: Extracting the type when crossing the compile-time and runtime boundary
 If you want to make some type calculation and then need a value, it's perfectly OK.
 If, on the other hand, you need to get a type, use `decltype()`.
 
@@ -165,7 +168,11 @@ core::lambda::detail::Arg<...>() provides a way to extend to more arguments
 
 
 ## core::range
-    no inner namespace
+
+> no inner namespace
+
+> #### C++11
+    
 
 Use Python-style for-loops instead of C/C++'s `for (_;_;_)`
 ```C++
