@@ -65,6 +65,7 @@ constexpr auto is_subclass_of = rbind_predicate<std::is_base_of, X>();
 ```
 
 - Finally, you can do *PATTERN MATCHING* on types! 
+    <!> Pattern matching matches the first alternative and returns, there is no fallthrough.
 ```C++
 Type<A>.match(
     is_integral         >>  transform< /* Any metafunction, including ones from std type_traits */ >,
@@ -86,6 +87,7 @@ Types<Ts...>  <->  TypeList<Ts...>( );
 
 You can:
 - [x] apply same transformations as for TypeOf 
+- [x] concatenate Type<> + Types<> and Types<> + Types<> easily!
 - [x] test if *all*, *any* or *none* of the types satisfy some Predicate.
 - [x] transform your TypeList<...>
 - [x] filter it
@@ -114,6 +116,16 @@ constexpr auto ts = Types<int, float, void, double, bool>.filter(!is_void).match
     (is_integral & !is<bool>)   >>  transform<std::make_unsigned>
 ); // -> Types< unsigned int, float, double, bool >;
 ```
+
+## NOTE: Extracting the type when crossing the compile-time and runtime boundary
+If you want to make some type calculation and then need a value, it's perfectly OK.
+If, on the other hand, you need to get a type, use `decltype()`.
+
+```C++
+typename decltype( Types<...>.filter(...).transform<...>().match(...) )::type
+```
+
+
 
 ## core::lambda
 ```C++
