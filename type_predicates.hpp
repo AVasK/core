@@ -5,156 +5,159 @@
 
 namespace core {
 inline namespace typesystem {
+
+
 namespace detail {
 
-struct TypePredicate {};
-struct TypeCase {};
-
-struct TypeTransformation {};
-
-template <template <typename> class F>
-struct type_transform : TypeTransformation {
-    template <typename T>
-    using apply = F<T>;
-};
+    struct TypePredicate {};
+    struct TypeTransformation {};
+    struct TypeCase {};
 
 
-template <
-    typename Predicate,  
-    typename Transform,
-    typename = meta::require< 
-        std::is_base_of<TypePredicate, Predicate>::value 
-        &&
-        std::is_base_of<TypeTransformation, Transform>::value
-    >  
->
-struct TypeMorph : TypeCase {
-    template <typename T>
-    constexpr bool test() {
-        return Predicate::template eval<T>();
-    }
-
-    template <typename T>
-    using apply = typename Transform::template apply<T>;
-};
+    template <template <typename> class F>
+    struct type_transform : TypeTransformation {
+        template <typename T>
+        using apply = F<T>;
+    };
 
 
-template <
-    typename Predicate,  
-    typename T,
-    typename = meta::require< 
-        std::is_base_of<TypePredicate, Predicate>::value 
-    >  
->
-struct TypeChange : TypeCase {
-    template <typename X>
-    constexpr bool test() {
-        return Predicate::template eval<X>();
-    }
-
-    template <typename>
-    using apply = meta::identity<T>;
-};
-
-
-template <
-    typename Transform, 
-    typename Predicate,
-    typename = meta::require< 
-                std::is_base_of<TypeTransformation, Transform>::value
-                &&
-                std::is_base_of<TypePredicate, Predicate>::value
+    template <
+        typename Predicate,  
+        typename Transform,
+        typename = meta::require< 
+            std::is_base_of<TypePredicate, Predicate>::value 
+            &&
+            std::is_base_of<TypeTransformation, Transform>::value
+        >  
     >
->
-constexpr auto operator>> (Predicate condition, Transform morph) noexcept {
-    return TypeMorph<Predicate, Transform>{};
-}
+    struct TypeMorph : TypeCase {
+        template <typename T>
+        constexpr bool test() {
+            return Predicate::template eval<T>();
+        }
+
+        template <typename T>
+        using apply = typename Transform::template apply<T>;
+    };
 
 
-// Predicate binding
-template <template<typename...> class Predicate, typename... Ts>
-struct bind_predicate : TypePredicate {
-    template <typename T>
-    static constexpr 
-    bool eval() {
-        return Predicate<T,Ts...>::value;
+    template <
+        typename Predicate,  
+        typename T,
+        typename = meta::require< 
+            std::is_base_of<TypePredicate, Predicate>::value 
+        >  
+    >
+    struct TypeChange : TypeCase {
+        template <typename X>
+        constexpr bool test() {
+            return Predicate::template eval<X>();
+        }
+
+        template <typename>
+        using apply = meta::identity<T>;
+    };
+
+
+    template <
+        typename Transform, 
+        typename Predicate,
+        typename = meta::require< 
+                    std::is_base_of<TypeTransformation, Transform>::value
+                    &&
+                    std::is_base_of<TypePredicate, Predicate>::value
+        >
+    >
+    constexpr auto operator>> (Predicate, Transform) noexcept {
+        return TypeMorph<Predicate, Transform>{};
     }
-};
-
-template <template<typename...> class Predicate, typename... Ts>
-struct rbind_predicate : TypePredicate {
-    template <typename T>
-    static constexpr 
-    bool eval() {
-        return Predicate<Ts...,T>::value;
-    }
-};
 
 
-// Logical operations on predicates
-template <class P>
-struct Neg : TypePredicate {
-    template <class T>
-    static constexpr 
-    bool eval() {
-        return !P::template eval<T>();
-    }
-};
+    // Predicate binding
+    template <template<typename...> class Predicate, typename... Ts>
+    struct bind_predicate : TypePredicate {
+        template <typename T>
+        static constexpr 
+        bool eval() {
+            return Predicate<T,Ts...>::value;
+        }
+    };
+
+    template <template<typename...> class Predicate, typename... Ts>
+    struct rbind_predicate : TypePredicate {
+        template <typename T>
+        static constexpr 
+        bool eval() {
+            return Predicate<Ts...,T>::value;
+        }
+    };
 
 
-template <class P1, class P2>
-struct And : TypePredicate {
-    template <class T>
-    static constexpr 
-    bool eval() {
-        return P1::template eval<T>() 
-            && 
-            P2::template eval<T>();
-    }
-};
+    // Logical operations on predicates
+    template <class P>
+    struct Neg : TypePredicate {
+        template <class T>
+        static constexpr 
+        bool eval() {
+            return !P::template eval<T>();
+        }
+    };
 
 
-template <class P1, class P2>
-struct Or : TypePredicate {
-    template <class T>
-    static constexpr 
-    bool eval() {
-        return P1::template eval<T>() 
-            ||
-            P2::template eval<T>();
-    }
-};
+    template <class P1, class P2>
+    struct And : TypePredicate {
+        template <class T>
+        static constexpr 
+        bool eval() {
+            return P1::template eval<T>() 
+                && 
+                P2::template eval<T>();
+        }
+    };
+
+
+    template <class P1, class P2>
+    struct Or : TypePredicate {
+        template <class T>
+        static constexpr 
+        bool eval() {
+            return P1::template eval<T>() 
+                ||
+                P2::template eval<T>();
+        }
+    };
+
+
+    template <class P1, class P2,
+        typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
+        typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
+    >
+    inline
+    constexpr auto operator& (P1, P2) noexcept -> detail::And<P1,P2> {
+        return detail::And<P1,P2>();
+    } 
+
+
+    template <class P1, class P2,
+        typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
+        typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
+    >
+    inline
+    constexpr auto operator| (P1, P2) noexcept -> detail::Or<P1,P2> {
+        return detail::Or<P1,P2>();
+    } 
+
+
+    template <class Pred,
+        typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, Pred>::value>
+    >
+    inline
+    constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
+        return detail::Neg<Pred>{};
+    } 
 
 }//namespace detail
 
-
-template <class P1, class P2,
-    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
-    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
->
-inline
-constexpr auto operator& (P1, P2) noexcept -> detail::And<P1,P2> {
-    return detail::And<P1,P2>();
-} 
-
-
-template <class P1, class P2,
-    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P1>::value>,
-    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
->
-inline
-constexpr auto operator| (P1, P2) noexcept -> detail::Or<P1,P2> {
-    return detail::Or<P1,P2>();
-} 
-
-
-template <class Pred,
-    typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, Pred>::value>
->
-inline
-constexpr auto operator! (Pred p) -> detail::Neg<Pred> {
-    return detail::Neg<Pred>{};
-} 
 
 
 template <template <typename> class F>

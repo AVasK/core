@@ -47,6 +47,8 @@ template <typename T>
 struct TypeOf {
     using type = T;
 
+    operator TypeList<T> (){return {};} // makes TypeOf<T> convertible to TypeList<T>
+
     constexpr auto remove_cv() const noexcept -> TypeOf<typename std::remove_cv<type>::type> { return {}; }
     constexpr auto add_cv() const noexcept -> TypeOf<typename std::add_cv<type>::type> { return {}; }
 
@@ -82,6 +84,7 @@ struct TypeOf {
         typename... Cases,
         typename=meta::require< Types<Case, Cases...>.all( core::is_subclass_of<core::detail::TypeCase> )>
     >
+    inline
     constexpr auto match(Case c, Cases... cases) const noexcept {
         if constexpr ( c.template test<T>() ) {
             using new_T = typename Case::template apply< T >::type;
@@ -147,48 +150,71 @@ bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
 template <typename... Ts>
 struct TypeList {
 
-    constexpr auto remove_cv() const noexcept -> TypeList<typename std::remove_cv<Ts>::type...> { return {}; }
     constexpr auto add_cv() const noexcept -> TypeList<typename std::add_cv<Ts>::type...> { return {}; }
+    constexpr auto remove_cv() const noexcept -> TypeList<typename std::remove_cv<Ts>::type...> { return {}; }
 
-    constexpr auto remove_const() const noexcept -> TypeList<typename std::remove_const<Ts>::type...> { return {}; }
     constexpr auto add_const() const noexcept -> TypeList<typename std::add_const<Ts>::type...> { return {}; }
+    constexpr auto remove_const() const noexcept -> TypeList<typename std::remove_const<Ts>::type...> { return {}; }
 
-    constexpr auto remove_volatile() const noexcept -> TypeList<typename std::remove_volatile<Ts>::type...> { return {}; }
     constexpr auto add_volatile() const noexcept -> TypeList<typename std::add_volatile<Ts>::type...> { return {}; }
+    constexpr auto remove_volatile() const noexcept -> TypeList<typename std::remove_volatile<Ts>::type...> { return {}; }
 
-    constexpr auto remove_reference() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
     constexpr auto add_lvalue_reference() const noexcept -> TypeList<typename std::add_lvalue_reference<Ts>::type...> { return {}; }
     constexpr auto add_rvalue_reference() const noexcept -> TypeList<typename std::add_rvalue_reference<Ts>::type...> { return {}; }
+    constexpr auto remove_reference() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
+    
+    constexpr auto add_pointer() const noexcept -> TypeList<typename std::add_pointer<Ts>::type...> { return {}; }
+    constexpr auto remove_pointer() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
+    
     // common shortcuts
-    constexpr auto remove_ref() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
     constexpr auto add_lvalue_ref() const noexcept -> TypeList<typename std::add_lvalue_reference<Ts>::type...> { return {}; }
     constexpr auto add_rvalue_ref() const noexcept -> TypeList<typename std::add_rvalue_reference<Ts>::type...> { return {}; }
-
-    constexpr auto remove_pointer() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
-    constexpr auto add_pointer() const noexcept -> TypeList<typename std::add_pointer<Ts>::type...> { return {}; }
-    // common shortcuts
-    constexpr auto remove_ptr() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
+    constexpr auto remove_ref() const noexcept -> TypeList<typename std::remove_reference<Ts>::type...> {return {};}
     constexpr auto add_ptr() const noexcept -> TypeList<typename std::add_pointer<Ts>::type...> { return {}; }
+    constexpr auto remove_ptr() const noexcept -> TypeList<typename std::remove_pointer<Ts>::type...> { return {}; }
 
     constexpr auto decay() const noexcept -> TypeList<typename std::decay<Ts>::type...> { return {}; }
-
     constexpr auto raw() const noexcept -> TypeList<typename std::remove_reference<typename std::remove_cv<Ts>::type>::type...> { return {}; }
 
 
     // transformations on types
     constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
-
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
 
     template <template <typename> class MetaFunc>
     constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }
 
-    // template <template <typename> class MetaFunc>
-    // constexpr auto filter() const noexcept -> TypeList<meta::filter<MetaFunc, meta::typelist<Ts...>> { return {}; }
+    template <typename Predicate>
+    constexpr auto filter(Predicate) const noexcept -> meta::filter_p<TypeList<Ts...>, Predicate> { 
+        static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
+        "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert."); 
+        return{}; 
+    }
+        // if constexpr (Types<Ts...>.head().satisfies( p )) {
+        //     return Types<Ts...>.head() + Types<Ts...>.tail().filter(p);
+        // } else {
+        //     return Types<Ts...>.tail().filter(p);
+        // }
 
 
-    #if __cplusplus/100 >= 2014
-    
+#if __cplusplus/100 >= 2014
+    // Pattern matching
+    template <
+        typename... Cases,
+        typename=meta::require< Types<Cases...>.all( core::is_subclass_of<detail::TypeCase> )>
+    >
+    inline
+    constexpr auto match(Cases... cases) const noexcept 
+    {
+        // return (Type<Ts>.match(cases...) + ...); // A C++17 way of saying this
+        return Types<typename decltype(Type<Ts>.match(cases...))::type...>;
+    }
+#endif
+
+    //TODO: Add for_each
+
+
+#if __cplusplus/100 >= 2014
     template <class P, 
         typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
     >
@@ -211,9 +237,36 @@ struct TypeList {
     constexpr bool none (P) const noexcept {
         return !meta::any({ P::template eval<Ts>()... });
     }
-
-    #endif
+#endif
 };
+
+
+// TypeOf concat
+template <typename T, typename U>
+inline
+constexpr auto operator+ (TypeOf<T>, TypeOf<U>) -> TypeList<T, U> {
+    return {};
+}
+
+// TypeList concat
+template <typename... Ts, typename... Us>
+inline
+constexpr auto operator+ (TypeList<Ts...>, TypeList<Us...>) -> TypeList<Ts..., Us...> {
+    return {};
+}
+
+// // TypeList + TypeOf 
+// template <typename... Ts, typename U>
+// inline
+// constexpr auto operator+ (TypeList<Ts...>, TypeOf<U>) -> TypeList<Ts..., U> {
+//     return {};
+// }
+// // TypeOf + TypeList 
+// template <typename T, typename... Us>
+// inline
+// constexpr auto operator+ (TypeOf<T>, TypeList<Us...>) -> TypeList<T, Us...> {
+//     return {};
+// }
 
 
 // TypeCase construction
@@ -344,19 +397,13 @@ auto operator<< (std::ostream& os, TypeList<T, Ts...> types) -> std::ostream& {
     return os;
 }
 
+
 #if __cplusplus/100 < 2017
 inline
 auto operator<< (std::ostream& os, TypeList<> types) -> std::ostream& {
     return os;
 }
 #endif
-
-
-template <typename... Ts, typename... Us>
-inline
-constexpr auto operator+ (TypeList<Ts...>, TypeList<Us...>) -> TypeList<Ts..., Us...> {
-    return {};
-}
 
 
 #if defined PRETTY_FUNC

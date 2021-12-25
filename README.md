@@ -5,6 +5,12 @@
 using namespace core::typesystem
 ```
 
+### Type:
+```C++
+struct TypeOf<T> 
+Type<T>  <->  TypeOf<T>( );
+```
+
 - For starters, you can easily compare types like that
     ( and use those anywhere you wish, since they're constexpr )
 ```C++
@@ -72,7 +78,39 @@ Type<A>.match(
     `predicate >> [transform | Type]`
     the predicate should be created via bind_predicate or rbind_predicate.
 
+### Types:
+```C++
+struct TypeList<Ts...> 
+Types<Ts...>  <->  TypeList<Ts...>( );
+```
 
+You can:
+- apply same transformations as for TypeOf 
+```C++
+Types<int, float>.add_const().add_lvalue_ref();
+```
+
+- test if *all*, *any* or *none* of the types satisfy some Predicate.
+- transform your TypeList<...>
+- filter it
+- use pattern matching on it
+
+### Examples:
+
+Testing predicates
+
+```C++
+Types<int, long>.all( is_integral | is_floating_point )
+```
+
+Filter, then Pattern matching
+```C++
+constexpr auto ts = Types<int, float, void, double, bool>.filter(!is_void).match(
+    is<void>                    >>  Type<char>,
+    is_lvalue_reference         >>  transform<std::remove_reference>,
+    (is_integral & !is<bool>)   >>  transform<std::make_unsigned>
+); // -> Types< unsigned int, float, double, bool >;
+```
 
 ## core::lambda
 ```C++

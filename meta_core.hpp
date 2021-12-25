@@ -22,10 +22,22 @@ struct identity {
     using type = T;
 };
 
+
+template <typename T>
+using extract_type = typename T::type;
+
+
 template <typename T>
 struct always_true : std::true_type {};
 
+
 struct nothing;
+
+
+template <size_t N>
+struct number {
+    enum{ value = N };
+};
 
 
 template <typename... Ts>
@@ -137,6 +149,28 @@ struct apply_impl<F, List<Ts...>> {
 
 template <metafunc F, class List>
 using apply = typename apply_impl<F, List>::type;
+
+
+// filter
+template <class List, class Predicate>
+struct filter_p_impl;
+
+template<metafunc List, typename... Ts, class Predicate>
+struct filter_p_impl<List<Ts...>, Predicate> {
+    using type = select< 
+        Predicate::template eval< head<Ts...> >(), 
+        prepend< typename filter_p_impl<apply<List, tail<Ts...>>, Predicate>::type, head<Ts...> >,
+        typename filter_p_impl<apply<List, tail<Ts...>>, Predicate>::type
+    >;
+};
+
+template<metafunc List, class Predicate>
+struct filter_p_impl<List<>, Predicate> {
+    using type = List<>;
+};
+
+template<class List, class Predicate>
+using filter_p = typename filter_p_impl<List, Predicate>::type;
 
 
 //transform
