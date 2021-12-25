@@ -85,25 +85,28 @@ Types<Ts...>  <->  TypeList<Ts...>( );
 ```
 
 You can:
-- apply same transformations as for TypeOf 
-```C++
-Types<int, float>.add_const().add_lvalue_ref();
-```
-
-- test if *all*, *any* or *none* of the types satisfy some Predicate.
-- transform your TypeList<...>
-- filter it
-- use pattern matching on it
+- [x] apply same transformations as for TypeOf 
+- [x] test if *all*, *any* or *none* of the types satisfy some Predicate.
+- [x] transform your TypeList<...>
+- [x] filter it
+- [x] use pattern matching on it!
+- [ ] iterate via for_each (on TODO list)
 
 ### Examples:
 
-Testing predicates
-
+- Simple transformations: the same transformation is applied to all types in the TypeList 
 ```C++
-Types<int, long>.all( is_integral | is_floating_point )
+Types<int, float>.add_const().add_lvalue_ref() // -> Types<const int &, const float &>
 ```
 
-Filter, then Pattern matching
+Testing predicates
+```C++
+Types<int, long, void>.all( is_integral | is_floating_point ) // -> false
+Types<int, long, void>.any( is_integral | is_floating_point ) // -> true
+Types<int, long, void>.none( is_void )                        // -> false
+```
+
+*Filter*ing and pattern *match*ing combined
 ```C++
 constexpr auto ts = Types<int, float, void, double, bool>.filter(!is_void).match(
     is<void>                    >>  Type<char>,
