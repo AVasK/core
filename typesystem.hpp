@@ -88,7 +88,7 @@ struct TypeOf {
     constexpr auto match(Case c, Cases... cases) const noexcept {
     #if __cplusplus/100 >= 2017
         if constexpr ( c.template test<T>() ) {
-            using new_T = typename Case::template apply< T >::type;
+            using new_T = typename Case::template apply< T >;//::type;
             return Type<new_T>;
         } else {
             return this->match(cases...);
