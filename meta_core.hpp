@@ -23,6 +23,9 @@ struct identity {
 };
 
 
+struct nothing;
+
+
 template <typename T>
 using extract_type = typename T::type;
 
@@ -31,15 +34,7 @@ template <typename T>
 struct always_true : std::true_type {};
 
 
-struct nothing;
-
-
-template <size_t N>
-struct number {
-    enum{ value = N };
-};
-
-
+// ===== typelist =====
 template <typename... Ts>
 struct typelist;// {}; // We don't even need to actually define it :)
 
@@ -78,7 +73,7 @@ template <typename... Ts>
 using tail = typename tail_impl<Ts...>::type;
 
 
-// select
+// ===== select =====
 template <bool Condition, class ThenType, class ElseType>
 struct select_impl {
     using type = ElseType;
@@ -105,6 +100,68 @@ struct defer_impl {
 
 template <metafunc F, typename... Args>
 using defer = defer_impl<F, Args...>;
+
+
+// ===== bind =====
+template <metafunc F, typename... Ts>
+struct bind_first {
+    template <typename... Us>
+    using with = F<Ts..., Us...>;
+};
+
+template <metafunc F, typename T>
+using bind = bind_first<F,T>;
+
+
+// ===== chain =====
+// template <metafunc... Fs>
+// struct chain;
+
+// template <metafunc F1, metafunc F2, metafunc... Fs>
+// struct chain<F1, F2, Fs...> {
+//     template <typename... Args>
+//     using apply = typename chain<F2, Fs...>::template apply< F1<Args...> >;
+// };
+
+// template <metafunc F>
+// struct chain<F> {
+//     template <typename... Args>
+//     using apply = typename meta::defer<F, Args...>::type;
+// };
+
+// chain<F1, F2, F3> -> F1<F2<F3>>
+
+
+// ===== if_ =====
+template <bool Cond>
+struct if_helper{
+    template <typename Then, typename Else>
+    constexpr auto operator() (Then&& a, Else&& b) const {
+        return std::forward<Then>(a);
+    }
+};
+
+template<>
+struct if_helper<false> {
+    template <typename Then, typename Else>
+    constexpr auto operator() (Then&& a, Else&& b) const {
+        return std::forward<Else>(b);
+    }
+};
+
+template <bool Cond>
+CORE_CPP17_INLINE_VARIABLE
+ constexpr auto if_ = if_helper<Cond>();
+
+
+template <size_t N>
+struct number {
+    enum{ value = N };
+};
+
+
+template <size_t N>
+struct tag : std::integral_constant<size_t, N> {};
 
 
 // prepend

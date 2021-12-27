@@ -78,6 +78,20 @@ struct TypeOf {
 
 
 #if __cplusplus/100 >= 2014
+
+#   if __cplusplus/100 <= 2014
+    template <typename Case, typename... Cases>
+    constexpr auto match_helper(meta::tag<true>, Case c, Cases... cases) const noexcept {
+        using new_T = typename Case::template apply< T >::type;
+        return Type<new_T>;
+    }
+
+    template <typename Case, typename... Cases>
+    constexpr auto match_helper(meta::tag<false>, Case c, Cases... cases) const noexcept {
+        return this->match(cases...);
+    }
+#   endif
+
     // Pattern matching
     template <
         typename Case,
@@ -86,12 +100,17 @@ struct TypeOf {
     >
     inline
     constexpr auto match(Case c, Cases... cases) const noexcept {
+    #if __cplusplus/100 >= 2017
         if constexpr ( c.template test<T>() ) {
             using new_T = typename Case::template apply< T >::type;
             return Type<new_T>;
         } else {
             return this->match(cases...);
         }
+    #else
+        constexpr bool cond = c.template test<T>();
+        return match_helper(meta::tag<cond>(), c, cases...);
+    #endif
     }
     
     constexpr auto match() const noexcept {
@@ -149,6 +168,10 @@ bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
 // Types
 template <typename... Ts>
 struct TypeList {
+    using types = meta::typelist<Ts...>;
+    
+    template <template <typename...> class F, typename... Args>
+    using recast = F<Ts..., Args...>;
 
     constexpr auto add_cv() const noexcept -> TypeList<typename std::add_cv<Ts>::type...> { return {}; }
     constexpr auto remove_cv() const noexcept -> TypeList<typename std::remove_cv<Ts>::type...> { return {}; }
@@ -178,11 +201,42 @@ struct TypeList {
 
 
     // transformations on types
+    template <template <typename...> class NewType, typename... Args>
+    constexpr auto make(Args&&... args) const -> recast<NewType> {
+        return NewType<Ts...> (std::forward<Args>(args)...);
+    }
     constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
 
-    template <template <typename> class MetaFunc>
-    constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }
+    // template <template <typename> class MetaFunc>
+    // constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }
+
+    // template <template<typename...> class... MetaFuncs>
+    // struct transformed;
+
+    // template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
+    // struct transformed<MetaFunc, MetaFuncs...> {
+    //     using type = typename TypeList< MetaFunc<Ts>... >::template transformed<MetaFuncs...>::type;
+    // };
+
+    // template <>
+    // struct transformed<> {using type = TypeList<Ts...>; };
+   
+
+    template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
+    constexpr auto transform() const noexcept {
+    #if __cplusplus/100 >= 2017
+        if constexpr (sizeof...(MetaFuncs) == 0) {
+            return Types< MetaFunc<Ts>... >;
+        } else {
+            return Types< MetaFunc<Ts>... >.template transform<MetaFuncs...>();
+        }
+    #else 
+        return this->transform_helper<MetaFunc, MetaFuncs...>( meta::tag<(sizeof...(MetaFuncs) == 0)>{} );
+        // return typename TypeList<Ts...>::transformed<MetaFunc, MetaFuncs...>::type{};
+    #endif
+    }
+
 
     template <typename Predicate>
     constexpr auto filter(Predicate) const noexcept -> meta::filter_p<TypeList<Ts...>, Predicate> { 
@@ -206,8 +260,11 @@ struct TypeList {
     inline
     constexpr auto match(Cases... cases) const noexcept 
     {
-        // return (Type<Ts>.match(cases...) + ...); // A C++17 way of saying this
+    #if __cplusplus/100 >= 2017
+        return (Type<Ts>.match(cases...) + ...); // A C++17 way of saying this
+    #else
         return Types<typename decltype(Type<Ts>.match(cases...))::type...>;
+    #endif
     }
 #endif
 
@@ -238,6 +295,17 @@ struct TypeList {
         return !meta::any({ P::template eval<Ts>()... });
     }
 #endif
+
+private:
+     template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
+    constexpr auto transform_helper(meta::tag<true>) const noexcept {
+            return Types< MetaFunc<Ts>... >;
+    }
+
+    template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
+    constexpr auto transform_helper(meta::tag<false>) const noexcept {
+            return Types< MetaFunc<Ts>... >.template transform<MetaFuncs...>();
+    }
 };
 
 
@@ -256,17 +324,17 @@ constexpr auto operator+ (TypeList<Ts...>, TypeList<Us...>) -> TypeList<Ts..., U
 }
 
 // // TypeList + TypeOf 
-// template <typename... Ts, typename U>
-// inline
-// constexpr auto operator+ (TypeList<Ts...>, TypeOf<U>) -> TypeList<Ts..., U> {
-//     return {};
-// }
-// // TypeOf + TypeList 
-// template <typename T, typename... Us>
-// inline
-// constexpr auto operator+ (TypeOf<T>, TypeList<Us...>) -> TypeList<T, Us...> {
-//     return {};
-// }
+template <typename... Ts, typename U>
+inline
+constexpr auto operator+ (TypeList<Ts...>, TypeOf<U>) -> TypeList<Ts..., U> {
+    return {};
+}
+// TypeOf + TypeList 
+template <typename T, typename... Us>
+inline
+constexpr auto operator+ (TypeOf<T>, TypeList<Us...>) -> TypeList<T, Us...> {
+    return {};
+}
 
 
 // TypeCase construction
