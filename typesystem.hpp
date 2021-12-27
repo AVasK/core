@@ -78,20 +78,6 @@ struct TypeOf {
 
 
 #if __cplusplus/100 >= 2014
-
-#   if __cplusplus/100 <= 2014
-    template <typename Case, typename... Cases>
-    constexpr auto match_helper(meta::tag<true>, Case c, Cases... cases) const noexcept {
-        using new_T = typename Case::template apply< T >::type;
-        return Type<new_T>;
-    }
-
-    template <typename Case, typename... Cases>
-    constexpr auto match_helper(meta::tag<false>, Case c, Cases... cases) const noexcept {
-        return this->match(cases...);
-    }
-#   endif
-
     // Pattern matching
     template <
         typename Case,
@@ -138,6 +124,20 @@ private:
     constexpr auto apply_transform(Transformation t) {
         return Type<decltype(t(*this))>;
     }
+
+
+#   if __cplusplus/100 <= 2014
+    template <typename Case, typename... Cases>
+    constexpr auto match_helper(meta::tag<true>, Case c, Cases... cases) const noexcept {
+        using new_T = typename Case::template apply< T >::type;
+        return Type<new_T>;
+    }
+
+    template <typename Case, typename... Cases>
+    constexpr auto match_helper(meta::tag<false>, Case c, Cases... cases) const noexcept {
+        return this->match(cases...);
+    }
+#   endif
 
     // TODO: Add conversion to string
     // operator std::string () {
@@ -209,19 +209,7 @@ struct TypeList {
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
 
     // template <template <typename> class MetaFunc>
-    // constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }
-
-    // template <template<typename...> class... MetaFuncs>
-    // struct transformed;
-
-    // template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
-    // struct transformed<MetaFunc, MetaFuncs...> {
-    //     using type = typename TypeList< MetaFunc<Ts>... >::template transformed<MetaFuncs...>::type;
-    // };
-
-    // template <>
-    // struct transformed<> {using type = TypeList<Ts...>; };
-   
+    // constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }   
 
     template <template<typename...> class MetaFunc, template<typename...> class... MetaFuncs>
     constexpr auto transform() const noexcept {
@@ -233,7 +221,6 @@ struct TypeList {
         }
     #else 
         return this->transform_helper<MetaFunc, MetaFuncs...>( meta::tag<(sizeof...(MetaFuncs) == 0)>{} );
-        // return typename TypeList<Ts...>::transformed<MetaFunc, MetaFuncs...>::type{};
     #endif
     }
 
