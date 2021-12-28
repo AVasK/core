@@ -129,7 +129,7 @@ private:
 #   if __cplusplus/100 <= 2014
     template <typename Case, typename... Cases>
     constexpr auto match_helper(meta::tag<true>, Case c, Cases... cases) const noexcept {
-        using new_T = typename Case::template apply< T >::type;
+        using new_T = typename Case::template apply< T >;
         return Type<new_T>;
     }
 
@@ -207,6 +207,15 @@ struct TypeList {
     }
     constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
+
+
+    template <typename Predicate>
+    constexpr auto find(Predicate is_p) const noexcept {
+        static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
+        "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert.");
+
+        return Types<Ts...>.filter( is_p ).head();
+    }
 
     // template <typename Predicate>
     // constexpr auto find(Predicate is_p) const noexcept {
