@@ -23,7 +23,7 @@ struct identity {
 };
 
 
-struct nothing;
+struct nothing {};
 
 
 template <typename T>

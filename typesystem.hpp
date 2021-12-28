@@ -5,17 +5,17 @@
 #include <cctype> // isspace
 #include "compiler_detect.hpp"
 #include "macros.hpp"
-#include "meta_core.hpp"
+#include "meta_core.hpp" // metaprogramming
+#include "constexpr_types.hpp" // cx_optional, cx_array
+
+#if __cplusplus/100 >= 2014
+#include "type_predicates.hpp"
+#endif
 
 #if defined CORE_GCC || defined CORE_CLANG
 #   define PRETTY_FUNC __PRETTY_FUNCTION__
 #elif defined CORE_MSVC
 #   define PRETTY_FUNC __FUNCSIG__
-#endif
-
-
-#if __cplusplus/100 >= 2014
-#include "type_predicates.hpp"
 #endif
 
 
@@ -88,7 +88,7 @@ struct TypeOf {
     constexpr auto match(Case c, Cases... cases) const noexcept {
     #if __cplusplus/100 >= 2017
         if constexpr ( c.template test<T>() ) {
-            using new_T = typename Case::template apply< T >;//::type;
+            using new_T = typename Case::template apply< T >;
             return Type<new_T>;
         } else {
             return this->match(cases...);
@@ -207,6 +207,21 @@ struct TypeList {
     }
     constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
+
+    // template <typename Predicate>
+    // constexpr auto find(Predicate is_p) const noexcept {
+    //     static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
+    //     "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert.");
+
+    //     if constexpr (sizeof...(Ts) == 0) {
+    //         return Type<meta::nothing>;
+    //     }
+    //     else if constexpr (Types<Ts...>.head()( is_p )) {
+    //         return Types<Ts...>.head();
+    //     } else {
+    //         return Types<Ts...>.tail().find( is_p );
+    //     }
+    // }
 
     // template <template <typename> class MetaFunc>
     // constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }   
