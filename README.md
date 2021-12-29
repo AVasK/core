@@ -2,11 +2,11 @@
 
 ## core::typesystem
 
+> #### C++14
+
 > ```C++
 > using namespace core::typesystem
 > ```
-
-> #### C++14 is recommended for this submodule. 
 
 ### Working with a single Type
 ```C++
@@ -71,7 +71,7 @@ constexpr auto is_subclass_of = rbind_predicate<std::is_base_of, X>();
     <!> Pattern matching matches the first alternative and returns, there is no fallthrough.
 ```C++
 Type<A>.match(
-    is_integral         >>  transform< /* Any metafunction, including ones from std type_traits */ >,
+    is_integral         >>  transform< /* Any metafunctions, including ones from std type_traits */ >,
     is<void>            >>  Type< example::EmptyType >,
     is_lvalue_reference >>  transform< std::remove_reference >,
     otherwise           >>  ... // otherwise is an optional clause, like 'default' case in switch.
@@ -91,10 +91,11 @@ Types<Ts...>  <->  TypeList<Ts...>( );
 You can:
 - [x] apply same transformations as for TypeOf 
 - [x] concatenate Type<> + Types<> and Types<> + Types<> easily!
-- [x] test if *all*, *any* or *none* of the types satisfy some Predicate.
-- [x] transform your TypeList<...>
-- [x] filter it
-- [x] use pattern matching on it
+- [x] get .head() and .tail() of a TypeList
+- [x] test if **all**, **any** or **none** of the types satisfy some Predicate.
+- [x] transform TypeLists
+- [x] filter TypeLists
+- [x] use pattern matching on them
 - [ ] iterate via for_each (on TODO list)
 
 ### Examples:
@@ -106,18 +107,18 @@ Types<int, float>.add_const().add_lvalue_ref() // -> Types<const int &, const fl
 
 Testing predicates
 ```C++
-Types<int, long, void>.all( is_integral | is_floating_point ) // -> false
-Types<int, long, void>.any( is_integral | is_floating_point ) // -> true
-Types<int, long, void>.none( is_void )                        // -> false
+Types<int, long, void>.all( is_integral || is_floating_point ) // -> false
+Types<int, long, void>.any( is_integral || is_floating_point ) // -> true
+Types<int, long, void>.none( is_void )                         // -> false
 ```
 
 *Filter*ing and pattern *match*ing combined
 ```C++
-constexpr auto ts = Types<int, float, void, double, bool>.filter(!is_void).match(
-    is<void>                    >>  Type<char>,
-    is_lvalue_reference         >>  transform<std::remove_reference>,
-    (is_integral & !is<bool>)   >>  transform<std::make_unsigned>
-); // -> Types< unsigned int, float, double, bool >;
+constexpr auto ts = Types<int, float&, void, double, bool>.filter(!is_void).match(
+    is<void>                     >>  Type<char>,
+    is_lvalue_reference          >>  transform<std::remove_reference_t, std::add_const_t>,
+    (is_integral && !is<bool>)   >>  transform<std::make_unsigned>
+); // -> Types< unsigned int, const float, double, bool >;
 ```
 
 ### NOTE: Extracting the type when crossing the compile-time and runtime boundary
@@ -131,9 +132,12 @@ typename decltype( Types<...>.filter(...).transform<...>().match(...) )::type
 
 
 ## core::lambda
-```C++
-using namespace core::lambda;
-```
+
+> #### C++11
+
+> ```C++
+> using namespace core::lambda;
+> ```
 
 Create comparison and arithmetic lambdas quickly and on the spot
 Like when using sort, instead of this:
@@ -169,9 +173,9 @@ core::lambda::detail::Arg<...>() provides a way to extend to more arguments
 
 ## core::range
 
-> no inner namespace
-
 > #### C++11
+
+> no inner namespace
     
 
 Use Python-style for-loops instead of C/C++'s `for (_;_;_)`
