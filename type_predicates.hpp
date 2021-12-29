@@ -14,8 +14,14 @@ namespace detail {
     struct TypeCase {};
 
 
-    template <template <typename> class F>
+    template <template <typename> class F, template <typename> class... Fs>
     struct type_transform : TypeTransformation {
+        template <typename T>
+        using apply = typename type_transform<Fs...>::template apply< F<T> >;
+    };
+
+    template <template <typename> class F>
+    struct type_transform<F> : TypeTransformation {
         template <typename T>
         using apply = F<T>;
     };
@@ -160,8 +166,8 @@ namespace detail {
 
 
 
-template <template <typename> class F>
-constexpr static auto transform = detail::type_transform<F>();
+template <template <typename> class... Fs>
+constexpr static auto transform = detail::type_transform<Fs...>();
 
 constexpr static auto otherwise = detail::bind_predicate<meta::always_true>();
 
