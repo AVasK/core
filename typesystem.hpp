@@ -255,11 +255,6 @@ struct TypeList {
         "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert."); 
         return{}; 
     }
-        // if constexpr (Types<Ts...>.head().satisfies( p )) {
-        //     return Types<Ts...>.head() + Types<Ts...>.tail().filter(p);
-        // } else {
-        //     return Types<Ts...>.tail().filter(p);
-        // }
 
 
 #if __cplusplus/100 >= 2014
@@ -279,7 +274,7 @@ struct TypeList {
     }
 #endif
 
-    //TODO: Add for_each
+    ///TODO: Add for_each
 
 
 #if __cplusplus/100 >= 2014
@@ -319,6 +314,20 @@ private:
     }
 };
 
+
+
+// TypeList equality testing
+template <typename... T1, typename... T2>
+constexpr 
+bool operator== (TypeList<T1...>, TypeList<T2...>) noexcept {
+    return std::is_same<meta::typelist<T1...>, meta::typelist<T2...>>::value;
+}
+
+template <typename... T1, typename... T2>
+constexpr 
+bool operator!= (TypeList<T1...>, TypeList<T2...>) noexcept {
+    return !std::is_same<meta::typelist<T1...>, meta::typelist<T2...>>::value;
+}
 
 // TypeOf concat
 template <typename T, typename U>
