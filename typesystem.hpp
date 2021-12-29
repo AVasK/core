@@ -480,6 +480,7 @@ auto operator<< (std::ostream& os, TypeList<T, Ts...> types) -> std::ostream& {
 #if __cplusplus/100 < 2017
 inline
 auto operator<< (std::ostream& os, TypeList<> types) -> std::ostream& {
+    os << "\b\b";
     return os;
 }
 #endif
