@@ -139,7 +139,7 @@ namespace detail {
         typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
     >
     inline
-    constexpr auto operator& (P1, P2) noexcept -> detail::And<P1,P2> {
+    constexpr auto operator&& (P1, P2) noexcept -> detail::And<P1,P2> {
         return detail::And<P1,P2>();
     } 
 
@@ -149,7 +149,7 @@ namespace detail {
         typename = std::enable_if_t<std::is_base_of<detail::TypePredicate, P2>::value>
     >
     inline
-    constexpr auto operator| (P1, P2) noexcept -> detail::Or<P1,P2> {
+    constexpr auto operator|| (P1, P2) noexcept -> detail::Or<P1,P2> {
         return detail::Or<P1,P2>();
     } 
 
