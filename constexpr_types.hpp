@@ -15,7 +15,7 @@ namespace core {
 template <typename T>
 class cx_optional {
 public:
-    constexpr cx_optional (const T& v) : is_empty{false}, data{v} {}
+    constexpr cx_optional (const T& v) : data{v}, is_empty{false} {}
     constexpr cx_optional () : is_empty{true} {};
 
     constexpr operator bool() const { return !is_empty; }
