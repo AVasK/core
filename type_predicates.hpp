@@ -61,7 +61,7 @@ namespace detail {
         }
 
         template <typename>
-        using apply = meta::identity<T>;
+        using apply = T;
     };
 
 
