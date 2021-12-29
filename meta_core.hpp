@@ -1,5 +1,8 @@
 #pragma once
+
 #include <type_traits>
+#include <initializer_list>
+
 #define metafunc template<class...> class
 
 namespace meta {
@@ -130,28 +133,6 @@ using bind = bind_first<F,T>;
 // };
 
 // chain<F1, F2, F3> -> F1<F2<F3>>
-
-
-// ===== if_ =====
-template <bool Cond>
-struct if_helper{
-    template <typename Then, typename Else>
-    constexpr auto operator() (Then&& a, Else&& b) const {
-        return std::forward<Then>(a);
-    }
-};
-
-template<>
-struct if_helper<false> {
-    template <typename Then, typename Else>
-    constexpr auto operator() (Then&& a, Else&& b) const {
-        return std::forward<Else>(b);
-    }
-};
-
-template <bool Cond>
-CORE_CPP17_INLINE_VARIABLE
- constexpr auto if_ = if_helper<Cond>();
 
 
 template <size_t N>
@@ -320,6 +301,7 @@ constexpr size_t sum(T v, Ts... vs) noexcept {
 }
 
 
+#if __cplusplus/100 >= 2014
 // Any & All boolean funcs beta [bound to change]
 // ALL
 // template <bool... Vs>
@@ -355,7 +337,7 @@ constexpr bool any(std::initializer_list<bool> vs) noexcept {
     }
     return false;
 }
-
+#endif
 
 #undef metafunc
 } //namespace meta
