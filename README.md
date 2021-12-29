@@ -73,7 +73,7 @@ constexpr auto is_subclass_of = rbind_predicate<std::is_base_of, X>();
 Type<A>.match(
     is_integral         >>  transform< /* Any metafunctions, including ones from std type_traits */ >,
     is<void>            >>  Type< example::EmptyType >,
-    is_lvalue_reference >>  transform< std::remove_reference >,
+    is_lvalue_reference >>  transform< std::remove_reference_t >,
     otherwise           >>  ... // otherwise is an optional clause, like 'default' case in switch.
 ) 
 -> Type< /*whatever the resulting type is after the transformation*/ >
@@ -102,7 +102,9 @@ You can:
 
 - Simple transformations: the same transformation is applied to all types in the TypeList 
 ```C++
-Types<int, float>.add_const().add_lvalue_ref() // -> Types<const int &, const float &>
+Types<int, float>.add_const().add_lvalue_ref(); // -> Types<const int &, const float &>
+// or, using transform and std type_traits
+Types<int, float>.transform< std::add_const_t, std::add_lvalue_reference_t >(); // -> Types<const int &, const float &>
 ```
 
 Testing predicates
@@ -117,7 +119,7 @@ Types<int, long, void>.none( is_void )                         // -> false
 constexpr auto ts = Types<int, float&, void, double, bool>.filter(!is_void).match(
     is<void>                     >>  Type<char>,
     is_lvalue_reference          >>  transform<std::remove_reference_t, std::add_const_t>,
-    (is_integral && !is<bool>)   >>  transform<std::make_unsigned>
+    (is_integral && !is<bool>)   >>  transform<std::make_unsigned_t>
 ); // -> Types< unsigned int, const float, double, bool >;
 ```
 
