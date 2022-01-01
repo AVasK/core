@@ -20,16 +20,30 @@ public:
     constexpr cx_optional (const T& v) : data{v}, is_empty{false} {}
     constexpr cx_optional () : is_empty{true} {};
 
+    struct cx_optional_empty {};
+
     constexpr operator bool() const { return !is_empty; }
-    constexpr auto operator* () const { return data; }
-    constexpr auto operator->() const { return &data; }
+
+    constexpr auto value() const {
+        if (!is_empty) return data;
+        else throw cx_optional_empty {};
+    }
+
+    constexpr auto operator* () const {
+        return value();
+    }
+
+    constexpr auto operator->() const { 
+        return value();
+    }
+
 private:
     union { T data; };
     bool is_empty;
 };
 
 template <typename T>
-constexpr auto cx_make_optional(const T& value) {
+constexpr auto make_cx_optional(const T& value) {
     return cx_optional<T>(value);
 }
 
@@ -145,7 +159,7 @@ public:
         constexpr operator T() const { return value; }
     };
 
-    constexpr auto max() {
+    constexpr auto max() const {
         auto res = value_with_position(data[0], 0);
         for (auto i : range(N)) {
             if (data[i] > res) res = {data[i], i};
@@ -154,7 +168,7 @@ public:
     }
 
 
-    constexpr auto min() {
+    constexpr auto min() const {
         auto res = value_with_position(data[0], 0);
         for (auto i : range(N)) {
             if (data[i] < res) res = {data[i], i};
@@ -163,12 +177,36 @@ public:
     }
 
 
-    constexpr auto find(T value, size_t from=0) -> cx_optional<size_t> {
+    constexpr auto find(T value, size_t from=0) const -> cx_optional<size_t> {
         if (from >= N) return {};
 
         for (auto i : range(from, N)) {
             if (data[i] == value) {
-                return {i};
+                return i;
+            }
+        }
+        return {};
+    }
+
+
+    constexpr auto count(T value, size_t from=0) const -> size_t {
+        size_t count = 0;
+        for (auto i : range(from, N)) {
+            if (data[i] == value) {
+                count += 1;
+            }
+        }
+        return count;
+    }
+    
+
+    template <typename F>
+    constexpr auto where(F const& f, size_t from=0) const -> cx_optional<size_t> {
+        if (from >= N) return {};
+
+        for (auto i : range(from, N)) {
+            if ( f(data[i]) ) {
+                return i;
             }
         }
         return {};
@@ -179,7 +217,7 @@ public:
     constexpr auto end()   const noexcept { return &data[N]; }
 
     // Printing
-    friend auto operator<< (std::ostream& os, cx_array array) -> std::ostream& {
+    friend auto operator<< (std::ostream& os, cx_array const& array) -> std::ostream& {
         os << "[";
         for (auto& v : array) {
             os << v << ", ";
@@ -197,6 +235,25 @@ inline
 constexpr auto operator+ (cx_array<T,N> const& a, cx_array<T,M> const& b) -> cx_array<T, N+M> {
     return {a, b};
 }
+
+
+///TODO: REWRITE
+template <typename T, std::size_t N>
+class cx_string : public cx_array<T,N> {
+public:
+
+    constexpr cx_string (T const* other) : cx_array<T,N>{other} {};
+
+    constexpr cx_string (cx_array<T,N>&& temp) : cx_array<T,N>{temp} {};
+    // Printing
+    friend auto operator<< (std::ostream& os, cx_string const& s) -> std::ostream& {
+        for (auto& v : s) {
+            os << v;
+        }
+        return os;
+    }
+
+};
 
 
 }//namespace core

@@ -8,6 +8,8 @@
 #include "meta_core.hpp" // metaprogramming
 #include "constexpr_types.hpp" // cx_optional, cx_array
 
+#include "lambda.hpp"
+
 #if __cplusplus/100 >= 2014
 #include "type_predicates.hpp"
 #endif
@@ -382,6 +384,7 @@ constexpr size_t slen(const char (&str) [N]) {
 #if __cplusplus/100 >= 2014
 inline
 namespace impl_cpp14{
+    inline
     constexpr size_t pslen(const char * const ps) {
         for (size_t i=0; ;++i) {
             if (ps[i] == '\0') return i;
@@ -392,6 +395,7 @@ namespace impl_cpp14{
 inline
 #endif
 namespace impl_cpp11{
+    inline
     constexpr size_t pslen(const char* const ps, size_t idx=0) {
         return (ps[idx] == '\0') ?
         idx : pslen(ps, idx+1);
@@ -399,6 +403,7 @@ namespace impl_cpp11{
 }
 
 template <size_t N>
+inline
 constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
     return (str[idx] == c || idx >= N) ?
     idx
@@ -408,6 +413,7 @@ constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
 }
 
 template <size_t N>
+inline
 constexpr size_t skipSpace(const char (&str)[N], size_t idx=0) {
     return (!std::isspace( (int)str[idx] )) ?
         idx
@@ -457,6 +463,25 @@ auto type_name() -> CSlice {
     name.to   = slen(PRETTY_FUNC) - 2;
     return name;
 }
+
+
+
+// template <typename T>
+// inline 
+// CORE_CPP14_CONSTEXPR_FUNC
+// auto type_name() {
+//     using namespace core::lambda;
+
+//     constexpr auto size = slen(PRETTY_FUNC) - 1;
+//     constexpr auto str = core::cx_string<char, size>(PRETTY_FUNC);
+//     // return str;
+//     constexpr auto sq_brace = *str.find('[');
+//     constexpr auto T_pos = *str.find('T', sq_brace);
+//     constexpr auto eq_sign_pos = *str.find('=', T_pos);
+//     constexpr auto type_pos = *str.where($a != ' ', eq_sign_pos+1);
+//     constexpr auto name = core::cx_string<char, size-1-type_pos>( str.template slice<type_pos, size-1>() );
+//     return name;
+// }
 
 }//namespace detail
 
