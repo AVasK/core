@@ -163,8 +163,10 @@ public:
     }
 
 
-    constexpr auto find(T value) -> cx_optional<size_t> {
-        for (auto i : range(N)) {
+    constexpr auto find(T value, size_t from=0) -> cx_optional<size_t> {
+        if (from >= N) return {};
+
+        for (auto i : range(from, N)) {
             if (data[i] == value) {
                 return {i};
             }
