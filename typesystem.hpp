@@ -90,7 +90,7 @@ struct TypeOf {
     constexpr auto match(Case c, Cases... cases) const noexcept {
     #if __cplusplus/100 >= 2017
         if constexpr ( c.template test<T>() ) {
-            using new_T = typename Case::template apply< T >;
+            using new_T = meta::invoke< Case, T >;
             return Type<new_T>;
         } else {
             return this->match(cases...);
@@ -131,7 +131,7 @@ private:
 #   if __cplusplus/100 <= 2014
     template <typename Case, typename... Cases>
     constexpr auto match_helper(meta::tag<true>, Case c, Cases... cases) const noexcept {
-        using new_T = typename Case::template apply< T >;
+        using new_T = meta::invoke< Case, T >;
         return Type<new_T>;
     }
 
@@ -201,6 +201,19 @@ struct TypeList {
     constexpr auto decay() const noexcept -> TypeList<typename std::decay<Ts>::type...> { return {}; }
     constexpr auto raw() const noexcept -> TypeList<typename std::remove_reference<typename std::remove_cv<Ts>::type>::type...> { return {}; }
 
+    // sizes, alignments of types
+    constexpr auto sizes() const noexcept -> cx_array<size_t, sizeof...(Ts)> {
+        return {sizeof(Ts)...};
+    }
+
+    constexpr auto alignments() const noexcept -> cx_array<size_t, sizeof...(Ts)> {
+        return {alignof(Ts)...};
+    }
+
+    // indexing types
+    template <size_t Index>
+    constexpr auto at() const noexcept -> TypeOf<meta::type_at<Index, Ts...>> { return {}; }
+
 
     // transformations on types
     template <template <typename...> class NewType, typename... Args>
@@ -210,29 +223,6 @@ struct TypeList {
     constexpr auto head() const noexcept -> TypeOf< meta::head<Ts...> > { return {}; } 
     constexpr auto tail() const noexcept -> meta::apply<TypeList, meta::tail<Ts...>> { return {}; }
 
-
-    template <typename Predicate>
-    constexpr auto find(Predicate is_p) const noexcept {
-        static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
-        "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert.");
-
-        return Types<Ts...>.filter( is_p ).head();
-    }
-
-    // template <typename Predicate>
-    // constexpr auto find(Predicate is_p) const noexcept {
-    //     static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
-    //     "Predicate has to be a subclass of detail::TypePredicate. Use bind_predicate to convert.");
-
-    //     if constexpr (sizeof...(Ts) == 0) {
-    //         return Type<meta::nothing>;
-    //     }
-    //     else if constexpr (Types<Ts...>.head()( is_p )) {
-    //         return Types<Ts...>.head();
-    //     } else {
-    //         return Types<Ts...>.tail().find( is_p );
-    //     }
-    // }
 
     // template <template <typename> class MetaFunc>
     // constexpr auto transform() const noexcept -> TypeList<MetaFunc<Ts>...> { return {}; }   
@@ -268,11 +258,13 @@ struct TypeList {
     inline
     constexpr auto match(Cases... cases) const noexcept 
     {
-    #if __cplusplus/100 >= 2017
-        return (Type<Ts>.match(cases...) + ...); // A C++17 way of saying this
-    #else
+    // #if __cplusplus/100 >= 2017
+    //     return (Type<Ts>.match(cases...) + ...); // A C++17 way of saying this
+    // #else
+        // A funny thing is that c++17 fold expression proved to be MUCH SLOWER when compiling with 1000 args
+        // and requires setting -fbracket-depth 
         return Types<typename decltype(Type<Ts>.match(cases...))::type...>;
-    #endif
+    // #endif
     }
 #endif
 
