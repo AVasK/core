@@ -17,13 +17,13 @@ namespace detail {
     template <template <typename> class F, template <typename> class... Fs>
     struct type_transform : TypeTransformation {
         template <typename T>
-        using apply = typename type_transform<Fs...>::template apply< F<T> >;
+        using fn = meta::invoke< type_transform<Fs...>, F<T> >;
     };
 
     template <template <typename> class F>
     struct type_transform<F> : TypeTransformation {
         template <typename T>
-        using apply = F<T>;
+        using fn = F<T>;
     };
 
 
@@ -43,7 +43,7 @@ namespace detail {
         }
 
         template <typename T>
-        using apply = typename Transform::template apply<T>;
+        using fn = meta::invoke< Transform, T >;
     };
 
 
@@ -59,9 +59,9 @@ namespace detail {
         constexpr bool test() {
             return Predicate::template eval<X>();
         }
-
+        
         template <typename>
-        using apply = T;
+        using fn = T;
     };
 
 
