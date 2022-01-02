@@ -98,6 +98,21 @@ You can:
 - [x] use pattern matching on them
 - [ ] iterate via for_each (on TODO list)
 
+### Tested on:
+```C++
+using namespace core::typesystem;
+    constexpr auto ts = meta::apply< TypeList, meta::repeat<5000, int> >();
+    constexpr auto t = ts.at<400>();
+    std::cout << ts.match(
+        is_integral >> Type<float>,
+        is_void     >> Type<char>
+    ).all( is<float> ) << "\n";
+
+    auto nt = ts + ts;
+    std::cout << nt.sizes().max() << "\n";
+```
+`time: g++ -std=c++17 stest.cpp -I ../../GitHub/  0.82s user 0.05s system 97% cpu 0.887 total`
+
 ### Examples:
 
 - Simple transformations: the same transformation is applied to all types in the TypeList 
