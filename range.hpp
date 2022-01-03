@@ -52,24 +52,29 @@ constexpr auto range(T start, T end, T step) noexcept -> StrideRange<T>
 template <typename T>
 class Range {
 public:
+
+    const T from;
+    const T to;
+
+
     constexpr Range(T end) noexcept
-        : _begin {0}
-        , _end {end}
+        : from {0}
+        , to {end}
         {}
     
     constexpr Range(T begin, T end) noexcept
-        : _begin {begin}
-        , _end   {end}
+        : from {begin}
+        , to   {end}
     {}
     
     constexpr auto begin() const noexcept -> RangeIterator<T>
     {
-        return RangeIterator<T>( _begin );
+        return RangeIterator<T>( from );
     }
     
     constexpr auto end() const noexcept -> RangeIterator<T>
     {
-        return RangeIterator<T>( _end );
+        return RangeIterator<T>( to );
     }
     
     constexpr auto withStride(T stride) const noexcept -> StrideRange<T>
@@ -79,15 +84,12 @@ public:
     
     constexpr auto reverse() const noexcept -> StrideRange<T>
     {
-        return StrideRange<T>( _end-1, _begin-1, -1 );
+        return StrideRange<T>( to-1, from-1, -1 );
     }
     
     // Utility functions
     constexpr auto contains(T value) const noexcept -> bool;
 
-protected:
-    T _begin;
-    T _end;
 };
 
 
@@ -95,28 +97,30 @@ template <typename T>
 class StrideRange {
 public:
 
-    constexpr StrideRange(T begin, T end, T stride) noexcept 
-    : _begin{ begin }
-    , _end{ end }
-    , _stride{ stride } 
+    const T from;
+    const T stride;
+    const T to;
+
+    constexpr StrideRange(T begin, T end, T step) noexcept 
+    : from{ begin }
+    , to{ end }
+    , stride{ step } 
     {}
     
     constexpr auto begin() const noexcept -> StrideRangeIterator<T> {
-        return StrideRangeIterator<T>( _begin, _stride );
+        return StrideRangeIterator<T>( from, stride );
     }
     
     constexpr auto end() const noexcept -> StrideRangeIterator<T> {
-        return StrideRangeIterator<T>( _end, _stride );
+        return StrideRangeIterator<T>( to, stride );
     }
     
     constexpr auto reverse() const noexcept -> StrideRange {
-        return StrideRange( _end-1, _begin-1, -1 );
+        return StrideRange( to-1, from-1, -1 );
     }
 
     // Utility functions
     constexpr auto contains(T value) const noexcept -> bool;
-private:
-    T _begin, _stride, _end;
 };
 
 
@@ -192,14 +196,14 @@ private:
 template <typename T>
 inline
 constexpr bool Range<T>::contains(T value) const noexcept {
-    return _begin <= value && value < _end;
+    return from <= value && value < to;
 }
 
 
 template <typename T>
 inline
 constexpr bool StrideRange<T>::contains(T value) const noexcept {
-    return (value % _stride == _begin) && Range<T>::contains(value);
+    return (value % stride == from) && Range<T>::contains(value);
 }
 
 }//namespace core
