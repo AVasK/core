@@ -84,7 +84,7 @@ struct TypeOf {
     template <
         typename Case,
         typename... Cases,
-        typename=meta::require< Types<Case, Cases...>.all( core::is_subclass_of<core::detail::TypeCase> )>
+        typename=meta::require< Types<Case, Cases...>.all( core::is_subclass_of<detail::TypeCase> )>
     >
     inline
     constexpr auto match(Case c, Cases... cases) const noexcept {
@@ -107,14 +107,14 @@ struct TypeOf {
 
     
     template <class P,
-        typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
+        typename=typename std::enable_if<std::is_base_of<detail::TypePredicate, P>::value>::type 
     >
     constexpr bool satisfies(P) const noexcept {
         return P::template eval<type>();
     }
 
     template <class P, 
-        typename=typename std::enable_if<std::is_base_of<core::detail::TypePredicate, P>::value>::type 
+        typename=typename std::enable_if<std::is_base_of<detail::TypePredicate, P>::value>::type 
     >
     constexpr bool operator() (P) const noexcept {
         return P::template eval<type>();
@@ -273,7 +273,7 @@ struct TypeList {
 
 #if __cplusplus/100 >= 2014
     template <class P, 
-        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+        typename=typename std::enable_if_t<std::is_base_of<detail::TypePredicate, P>::value> 
     >
     constexpr bool all (P) const noexcept {
         return meta::all({ P::template eval<Ts>()... });
@@ -281,7 +281,7 @@ struct TypeList {
 
     
     template <class P, 
-        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+        typename=typename std::enable_if_t<std::is_base_of<detail::TypePredicate, P>::value> 
     >
     constexpr bool any (P) const noexcept {
         return meta::any({ P::template eval<Ts>()... });
@@ -289,7 +289,7 @@ struct TypeList {
 
 
     template <class P, 
-        typename=typename std::enable_if_t<std::is_base_of<core::detail::TypePredicate, P>::value> 
+        typename=typename std::enable_if_t<std::is_base_of<detail::TypePredicate, P>::value> 
     >
     constexpr bool none (P) const noexcept {
         return !meta::any({ P::template eval<Ts>()... });
