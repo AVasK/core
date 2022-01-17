@@ -288,5 +288,11 @@ CORE_CPP17_INLINE_VARIABLE constexpr auto is_trivially_move_constructible = bind
 
 CORE_CPP17_INLINE_VARIABLE constexpr auto is_nothrow_move_constructible = bind_predicate<std::is_nothrow_move_constructible>();
 
+CORE_CPP17_INLINE_VARIABLE constexpr auto has_virtual_destructor = bind_predicate<std::has_virtual_destructor>();
+
+#if __cplusplus/100 >= 2017
+    template <typename... Args>
+    CORE_CPP17_INLINE_VARIABLE constexpr auto is_invocable_with = bind_predicate<std::is_invocable, Args...>();
+#endif
 } //namespace typesystem
 } //namespace core
