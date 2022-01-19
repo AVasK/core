@@ -31,7 +31,7 @@ typename = typename std::enable_if<(                \
     &&                                              \
     std::is_base_of<FGen, F2>::value                \
 )>::type>                                           \
-inline constexpr                                    \
+constexpr                                           \
 auto operator cmpSign (F1 f1, F2 f2)                \
  -> FName<F1,F2>                                    \
 {                                                   \
@@ -39,7 +39,7 @@ auto operator cmpSign (F1 f1, F2 f2)                \
 }                                                   \
                                                     \
 template <typename F, typename T>                   \
-inline constexpr                                    \
+constexpr                                           \
 auto operator cmpSign (F f, T value)                \
 -> typename std::enable_if<                         \
     (std::is_base_of<FGen, F>::value                \
@@ -62,7 +62,7 @@ struct FName : FGen {                               \
     {}                                              \
                                                     \
     template <typename... Ts>                       \
-    inline constexpr                                \
+    constexpr                                       \
     auto operator() (Ts... args) const              \
     -> decltype(std::declval<F1>()(args...) opSign std::declval<F2>()(args...)) \
     {                                               \
@@ -76,7 +76,7 @@ typename = typename std::enable_if<(                \
     &&                                              \
     std::is_base_of<FGen, F2>::value                \
 )>::type>                                           \
-inline constexpr                                    \
+constexpr                                           \
 auto operator opSign (F1 f1, F2 f2)                 \
  -> FName<F1,F2>                                    \
 {                                                   \
@@ -84,7 +84,7 @@ auto operator opSign (F1 f1, F2 f2)                 \
 }                                                   \
                                                     \
 template <typename F, typename T>                   \
-inline constexpr                                    \
+constexpr                                           \
 auto operator opSign (F f, T value)                 \
 -> typename std::enable_if<                         \
     (std::is_base_of<FGen, F>::value                \
