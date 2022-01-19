@@ -325,27 +325,23 @@ bool operator!= (TypeList<T1...>, TypeList<T2...>) noexcept {
 
 // TypeOf concat
 template <typename T, typename U>
-inline
 constexpr auto operator+ (TypeOf<T>, TypeOf<U>) -> TypeList<T, U> {
     return {};
 }
 
 // TypeList concat
 template <typename... Ts, typename... Us>
-inline
 constexpr auto operator+ (TypeList<Ts...>, TypeList<Us...>) -> TypeList<Ts..., Us...> {
     return {};
 }
 
 // // TypeList + TypeOf 
 template <typename... Ts, typename U>
-inline
 constexpr auto operator+ (TypeList<Ts...>, TypeOf<U>) -> TypeList<Ts..., U> {
     return {};
 }
 // TypeOf + TypeList 
 template <typename T, typename... Us>
-inline
 constexpr auto operator+ (TypeOf<T>, TypeList<Us...>) -> TypeList<T, Us...> {
     return {};
 }
@@ -368,34 +364,28 @@ constexpr auto operator>> (Predicate p, TypeOf<T> t) noexcept {
 namespace detail {
 
 template <size_t N>
-inline
 constexpr size_t slen(const char (&str) [N]) {
     return N;
 }
 
-#if __cplusplus/100 >= 2014
-inline
-namespace impl_cpp14{
-    inline
+#if defined CORE_CPP14_CONSTEXPR_FUNC
+inline namespace impl_cpp14{
     constexpr size_t pslen(const char * const ps) {
         for (size_t i=0; ;++i) {
             if (ps[i] == '\0') return i;
         }
     }
 }
-#elif __cplusplus/100 >= 2011
-inline
-#endif
-namespace impl_cpp11{
-    inline
+#else
+inline namespace impl_cpp11{
     constexpr size_t pslen(const char* const ps, size_t idx=0) {
         return (ps[idx] == '\0') ?
         idx : pslen(ps, idx+1);
     }
 }
+#endif
 
 template <size_t N>
-inline
 constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
     return (str[idx] == c || idx >= N) ?
     idx
@@ -405,7 +395,6 @@ constexpr size_t findChar(const char (&str)[N], char c, size_t idx=0) {
 }
 
 template <size_t N>
-inline
 constexpr size_t skipSpace(const char (&str)[N], size_t idx=0) {
     return (!std::isspace( (int)str[idx] )) ?
         idx

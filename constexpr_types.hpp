@@ -231,7 +231,6 @@ private:
 };
 
 template <typename T, size_t N, size_t M>
-inline
 constexpr auto operator+ (cx_array<T,N> const& a, cx_array<T,M> const& b) -> cx_array<T, N+M> {
     return {a, b};
 }
