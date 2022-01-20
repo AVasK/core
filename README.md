@@ -1,4 +1,6 @@
 # CORE
+> CORE is still in early development stage, any feedback such as bug reports and issues is appreciated!
+> Most of the interfaces are neither fixed nor stable yet.
 
 ## core::typesystem
 
