@@ -1,6 +1,10 @@
 # CORE
-> CORE is still in early development stage, any feedback such as bug reports and issues is appreciated!
+> CORE is still in early development stage, any feedback such as bug reports and issues is appreciated!  
 > Most of the interfaces are neither fixed nor stable yet.
+
+> - Components in usable state: `typesystem`, `range`, `lambda`, `function`
+> - Work in progress: `pointers`, `constexpr_types`
+> - Prototyping and mockup: `exo_variant`, `generator`
 
 ## core::typesystem
 
