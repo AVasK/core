@@ -239,6 +239,12 @@ struct TypeList {
     }
 
 
+    /**
+     * @brief filter TypeList by Predicate
+     * 
+     * @tparam Predicate subclass of detail::TypePredicate [can be created by bind_predicate<>()]
+     * @return meta::filter_p<TypeList<Ts...>, Predicate> 
+     */
     template <typename Predicate>
     constexpr auto filter(Predicate) const noexcept -> meta::filter_p<TypeList<Ts...>, Predicate> { 
         static_assert(Type<Predicate>( is_subclass_of<detail::TypePredicate> ), 
@@ -246,6 +252,29 @@ struct TypeList {
         return{}; 
     }
 
+    
+    /**
+     * @brief Test if TypeList contains a single type X
+     * 
+     * @warning If TypeList is not a set, will result in hard error!
+     * @tparam X contained type
+     * @return true if X is in TypeList
+     */
+    template <typename X>
+    constexpr bool contains_unique() const noexcept {
+        return meta::set_contains<meta::typelist<Ts...>, X>::value;
+    }
+
+
+    /**
+     * @brief Test if TypeList contains type X
+     * 
+     * @note Not optimized for large numbers of template parameters
+     */
+    template <typename X>
+    constexpr bool contains() const noexcept {
+        return meta::contains<meta::typelist<Ts...>, X>::value;
+    }
 
 #if __cplusplus/100 >= 2014
     // Pattern matching
