@@ -30,8 +30,7 @@ struct TypeOf;
 
 #if __cplusplus/100 >= 2014
 template <typename T>
-CORE_CPP17_INLINE_VARIABLE
-constexpr auto Type = TypeOf<T>{};
+static constexpr auto Type = TypeOf<T>{};
 #endif
 
 
@@ -40,8 +39,7 @@ struct TypeList;
 
 #if __cplusplus/100 >= 2014
 template <typename... Ts>
-CORE_CPP17_INLINE_VARIABLE
-constexpr auto Types = TypeList<Ts...>{};
+static constexpr auto Types = TypeList<Ts...>{};
 #endif
 
 
