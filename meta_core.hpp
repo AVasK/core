@@ -7,15 +7,6 @@
 
 namespace meta {
 
-
-template <bool Cond, typename T=void>
-struct enable_if {};
-
-template <typename T>
-struct enable_if<true,T> {
-    using type = T;
-};
-
 template <bool Cond>
 using require = typename std::enable_if<Cond>::type;
 
@@ -24,6 +15,13 @@ template <typename T>
 struct identity {
     using type = T;
 };
+
+
+template <typename T, typename... Ts>
+struct first : identity<T> {};
+
+template <typename... Ts>
+using valid = typename first<void, Ts...>::type;
 
 
 struct nothing {};
@@ -152,24 +150,6 @@ struct bind_first {
 template <metafunc F, typename T>
 using bind = bind_first<F,T>;
 
-
-// ===== chain =====
-// template <metafunc... Fs>
-// struct chain;
-
-// template <metafunc F1, metafunc F2, metafunc... Fs>
-// struct chain<F1, F2, Fs...> {
-//     template <typename... Args>
-//     using apply = typename chain<F2, Fs...>::template apply< F1<Args...> >;
-// };
-
-// template <metafunc F>
-// struct chain<F> {
-//     template <typename... Args>
-//     using apply = typename meta::defer<F, Args...>::type;
-// };
-
-// chain<F1, F2, F3> -> F1<F2<F3>>
 
 
 template <size_t N>
