@@ -168,20 +168,21 @@ ARITHM(FMod, %)
 
 }//namespace detail
 
-
+#ifndef CORE_NO_LAMBDA_NAMES
 namespace numeric_args {
-    auto $0 = detail::Arg<0>();
-    auto $1 = detail::Arg<1>();
-    auto $2 = detail::Arg<2>();
-    auto $3 = detail::Arg<3>();
-    auto $4 = detail::Arg<4>();
+    static constexpr auto $0 = detail::Arg<0>();
+    static constexpr auto $1 = detail::Arg<1>();
+    static constexpr auto $2 = detail::Arg<2>();
+    static constexpr auto $3 = detail::Arg<3>();
+    static constexpr auto $4 = detail::Arg<4>();
 }
 
-constexpr auto $a = detail::Arg<0>();
-constexpr auto $b = detail::Arg<1>();
-constexpr auto $c = detail::Arg<2>();
-constexpr auto $d = detail::Arg<3>();
-constexpr auto $e = detail::Arg<4>();
+static constexpr auto $a = detail::Arg<0>();
+static constexpr auto $b = detail::Arg<1>();
+static constexpr auto $c = detail::Arg<2>();
+static constexpr auto $d = detail::Arg<3>();
+static constexpr auto $e = detail::Arg<4>();
+#endif 
 
 } // namespace lambda
 } //namespace core
