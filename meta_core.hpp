@@ -376,6 +376,62 @@ template <class List, class Value>
 using set_contains = typename detail::set_contains_impl<List, Value>::type;
 
 
+// make_set
+namespace detail {
+
+    template <class List, class Set>
+    struct make_set_impl;
+
+    template <
+        template <class...> class List,
+        template <class...> class Set,
+        typename... Ts
+    >
+    struct make_set_impl< List<>, Set<Ts...> > {
+        using type = Set<Ts...>;
+    };
+
+    template <
+        template <class...> class List,
+        typename T, typename... Ts,
+        template <class...> class Set,
+        typename... Us
+    >
+    struct make_set_impl< List<T, Ts...>, Set<Us...> > {
+        using type = typename select< 
+            set_contains<Set<Us...>, T>::value,
+            make_set_impl<List<Ts...>, Set<Us...>>,
+            make_set_impl<List<Ts...>, Set<Us..., T>>
+        >::type;
+    };
+}
+
+template <typename... Ts>
+using set = typename detail::make_set_impl<typelist<Ts...>, typelist<>>::type;
+
+template <class List, metafunc Set=typelist>
+using make_set = typename detail::make_set_impl< List, Set<> >::type;
+
+
+// contains
+namespace detail {
+    template <class List, typename X>
+    struct contains_impl;
+
+    template <metafunc List, typename T, typename... Ts,
+              typename X>
+    struct contains_impl<List<T,Ts...>, X> 
+    : std::integral_constant<bool, std::is_same<T,X>::value || contains_impl<List<Ts...>,X>::value> {};
+
+
+    template <metafunc List, typename X>
+    struct contains_impl<List<>, X> : std::integral_constant<bool, false> {};
+}
+
+template <class List, typename X>
+using contains = detail::contains_impl<List, X>;
+
+
 // sum
 constexpr size_t sum() noexcept { return 0; }
 
