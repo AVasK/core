@@ -34,7 +34,7 @@
 #endif
 
 
-#if __cplusplus/100 >= 2017 || \
+#if (defined __cpp_inline_variables && __cplusplus >= __cpp_inline_variables) ||\
     __has_extension(cxx_inline_variables)
 #   define CORE_CPP17_INLINE_VARIABLE inline
 #else
@@ -43,7 +43,9 @@
 
 
 #if __has_feature(__cxx_variable_templates__)
-#   define CORE_HAS_VARIABLE_TEMPLATES
+#   define CORE_HAS_VARIABLE_TEMPLATES true
+#else
+#   define CORE_HAS_VARIABLE_TEMPLATES false
 #endif
 
 #if __has_builtin(__builtin_unreachable)
