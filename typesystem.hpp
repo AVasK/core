@@ -28,18 +28,18 @@ inline namespace typesystem {
 template <typename T>
 struct TypeOf;  
 
-#if __cplusplus/100 >= 2014
-template <typename T>
-static constexpr auto Type = TypeOf<T>{};
-#endif
-
-
 template <typename... Ts>
 struct TypeList;
 
-#if __cplusplus/100 >= 2014
+
+#if CORE_HAS_VARIABLE_TEMPLATES
+template <typename T>
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Type = TypeOf<T>{};
+
 template <typename... Ts>
-static constexpr auto Types = TypeList<Ts...>{};
+CORE_CPP17_INLINE_VARIABLE
+constexpr auto Types = TypeList<Ts...>{};
 #endif
 
 
@@ -169,7 +169,7 @@ bool operator!= (TypeOf<T1> t1, TypeOf<T2> t2) noexcept {
 template <typename... Ts>
 struct TypeList {
     using types = meta::typelist<Ts...>;
-    
+
     template <template <typename...> class F, typename... Args>
     using recast = F<Ts..., Args...>;
 
