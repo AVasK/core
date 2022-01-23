@@ -38,7 +38,7 @@ namespace detail {
     >
     struct TypeMorph : TypeCase {
         template <typename T>
-        constexpr bool test() {
+        constexpr bool test() const noexcept {
             return Predicate::template eval<T>();
         }
 
@@ -56,7 +56,7 @@ namespace detail {
     >
     struct TypeChange : TypeCase {
         template <typename X>
-        constexpr bool test() {
+        constexpr bool test() const noexcept {
             return Predicate::template eval<X>();
         }
         

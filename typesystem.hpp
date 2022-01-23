@@ -7,12 +7,8 @@
 #include "macros.hpp"
 #include "meta_core.hpp" // metaprogramming
 #include "constexpr_types.hpp" // cx_optional, cx_array
-
-#include "lambda.hpp"
-
-#if __cplusplus/100 >= 2014
 #include "type_predicates.hpp"
-#endif
+
 
 #if defined CORE_GCC || defined CORE_CLANG
 #   define PRETTY_FUNC __PRETTY_FUNCTION__
