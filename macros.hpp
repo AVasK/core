@@ -61,6 +61,11 @@
 #   define CORE_HAS_ATTR_NO_UNIQUE_ADDRESS
 #endif
 
+#if __cplusplus/100 >= 2017 || \
+    __has_cpp_attribute(nodiscard)
+#   define CORE_HAS_ATTR_NODISCARD
+#endif
+
 
 #if __cplusplus/100 >= 2020 || __has_cpp_attribute(no_unique_address)
 #   define NO_UNIQUE_ADDRESS [[no_unique_address]]
@@ -72,5 +77,12 @@
 #else
 // no-op in MSVC v14x ABI
 #define NO_UNIQUE_ADDRESS
+
+
+#if CORE_HAS_ATTR(NODISCARD)
+#define NODISCARD [[nodiscard]]
+#else
+#define NODISCARD
+#endif
 
 #endif
