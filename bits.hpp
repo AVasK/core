@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstring> // std::memcpy
 #include <type_traits> // std::enable_if
 #include "compiler_detect.hpp"
