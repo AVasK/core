@@ -291,5 +291,12 @@ CORE_CPP17_INLINE_VARIABLE constexpr auto has_virtual_destructor = bind_predicat
     template <typename... Args>
     CORE_CPP17_INLINE_VARIABLE constexpr auto is_invocable_with = bind_predicate<std::is_invocable, Args...>();
 #endif
+
+template <class From>
+CORE_CPP17_INLINE_VARIABLE constexpr auto is_convertible_to = bind_predicate<std::is_convertible, From>();
+
+template <class To>
+CORE_CPP17_INLINE_VARIABLE constexpr auto is_convertible_from = rbind_predicate<std::is_convertible, To>();
+
 } //namespace typesystem
 } //namespace core
