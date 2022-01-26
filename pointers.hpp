@@ -87,7 +87,7 @@ public:
 
     template <class TBase, class BaseDel, std::enable_if_t<
         Type<TBase>(is_base_of<T>) &&
-        Type<BaseDel>( core::is_convertible_from<Deleter> )
+        Type<BaseDel>(is_convertible_from<Deleter>)
     >* = nullptr>
     constexpr operator ptr<TBase, BaseDel>() noexcept {
         return ptr<TBase,BaseDel>(p);
@@ -98,7 +98,7 @@ public:
 
 template <typename T, class Alloc>
 struct DeleterFor : MaybeEmpty<Alloc> {
-    DeleterFor (Alloc const& a) : MaybeEmpty<Alloc>{ a } {}
+    DeleterFor (Alloc & a) : MaybeEmpty<Alloc>{ a } {}
     void operator() (T * p) { 
         MaybeEmpty<Alloc>::get().deallocate(p, 1); 
         p->~T();
