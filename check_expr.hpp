@@ -21,7 +21,10 @@ namespace detail {
         constexpr expr(F const& f) : F{f} {}
 
         template <typename T>
-        constexpr bool is_valid_for() const {return (Type<decltype( overloads<F, no_match>{*this, no_match()}(std::declval<T>()) )> != Type<no_match>); }
+        constexpr bool operator() (T&& obj) const noexcept { return is_valid_for<T&&>(); }
+
+        template <typename T>
+        constexpr bool is_valid_for() const noexcept {return (Type<decltype( overloads<F, no_match>{*this, no_match()}(std::declval<T>()) )> != Type<no_match>); }
     };
 }
 
@@ -34,6 +37,10 @@ namespace detail {
  */
 template <class F>
 constexpr auto expr(F const& f) -> detail::expr<F> { return {f}; }
+
+#define CORE_TEST(x, expr) [](auto x)-> expr {}
+#define CORE_HAS_TYPEDEF(name) [](auto _)-> typename decltype(_):: name {}
+#define CORE_HAS_MEMBER(name) [](auto _)-> decltype(_.name) {}
 
 // Examples:
 // constexpr bool is_valid = expr([](auto _)-> typename decltype(*_) {}).is_valid_for<SomeType>();

@@ -153,6 +153,27 @@ typename decltype( Types<...>.filter(...).transform<...>().match(...) )::type
 ```
 
 
+## Checking if an expression is valid:
+> #### C++14 (uses generic lambdas)
+>    check_expr.hpp
+
+expr([](auto t) -> ... {}).is_valid_for<T>();
+
+defines macros:
+- CORE_HAS_MEMBER(name)  <=> x.name 
+- CORE_HAS_TYPEDEF(name) <=> T::name
+
+Example:
+```C++
+struct P { using pointer = int*; enum { x = 7 }; };
+
+using core::expr; 
+constexpr auto test = expr([](auto t) -> decltype(*t){ }).is_valid_for<int*>(); // true
+constexpr auto t2 = expr([](auto t)-> typename decltype(t)::pointer {}).is_valid_for<int>(); // false
+constexpr auto t3 = expr(CORE_HAS_MEMBER(x)).is_valid_for<P>(); // true
+constexpr auto t4 = expr(CORE_HAS_TYPEDEF(pointer)).is_valid_for<P>(); // true
+```
+
 
 ## core::lambda
 
