@@ -47,22 +47,99 @@ namespace detail {
 
     template <class Del, typename T>
     using get_pointer_type = decltype( get_pointer_type_impl<Del,T>( std::declval<T>() ) );
+
+    template <class Del>
+    struct DeleterType {
+        static_assert(Type<Del>(!is_reference), "<!> Instantiation Error");
+        using lval_ref = const Del&;
+        using good_rval_ref = Del&&;
+        // enum{ rval_overload = true };
+    };
+
+    template <class Del>
+    struct DeleterType<Del&> {
+        using lval_ref = Del&;
+        using bad_rval_ref = Del&&;
+        // enum{ rval_overload = false };
+    };
+
+    template <class Del>
+    struct DeleterType<const Del&> {
+        using lval_ref = const Del&;
+        using bad_rval_ref = const Del&&;
+        // enum{ rval_overload = false };
+    };
+
 }
 
 // By inheriting from view<T> we can pass templated ptr<T> into functions expecting view<T>  
 template <typename T, class Deleter=std::default_delete<T>>
 class ptr : public view<T>, private MaybeEmpty<Deleter> {
     // static_assert(Type<Deleter>( is_invocable_with< typename view<T>::ptr_type > ), "");
+    static_assert(Type<Deleter>(!is_rvalue_reference),
+                "the specified deleter type cannot be an rvalue reference");
     using view<T>::p;
 public:
     using pointer = detail::get_pointer_type<Deleter, T>;
+    using element_type = T;
+    using deleter_type = Deleter;
 
-    explicit constexpr ptr (T * pointer=nullptr, Deleter const& d=Deleter()) noexcept : view<T>{pointer}, MaybeEmpty<Deleter>{d} {}
+
+    // (1)
+    template <class D = meta::identity<Deleter>, typename= std::enable_if_t<
+        Type<typename D::type>(is_default_constructible && !is_pointer)
+    >>
+    constexpr ptr () noexcept : view<T>{}, MaybeEmpty<Deleter>{Deleter()} {}
+
+    // (1)
+    template <class D = meta::identity<Deleter>, typename= std::enable_if_t<
+        Type<typename D::type>(is_default_constructible && !is_pointer)
+    >>
+    constexpr ptr (std::nullptr_t) noexcept : view<T>{nullptr}, MaybeEmpty<Deleter>{Deleter()} {}
+
+
+    // (2)
+    template <class Dummy = meta::identity<Deleter>, typename= std::enable_if_t<
+        Type<typename Dummy::type>(is_default_constructible && !is_pointer)
+    >>
+    explicit constexpr ptr (pointer p_) noexcept 
+    : view<T>{p_}
+    , MaybeEmpty<Deleter>{Deleter()} {}
+
+
+    template <
+        class DRef = typename detail::DeleterType<deleter_type>::lval_ref ,
+        class D = meta::identity<Deleter>, 
+        typename= std::enable_if_t<
+            Type<typename D::type>(is_constructible_from<DRef>)
+        >
+    >
+    constexpr ptr (pointer p_, DRef d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{d_} {}
+
+
+    template <
+        class DType = detail::DeleterType<deleter_type> ,
+        class D = meta::identity<Deleter>, 
+        typename= std::enable_if_t<
+            // detail::DeleterType<deleter_type>::rval_overload &&
+            Type<typename D::type>(is_constructible_from<typename DType::rval_ref>)
+        >
+    >
+    constexpr ptr (pointer p_, typename DType::good_rval_ref d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{d_} {}
+
+
+    template <
+        class DType = detail::DeleterType<deleter_type>
+    >
+    constexpr ptr (pointer p_, typename DType::bad_rval_ref d_) noexcept = delete;
+
 
     ptr(ptr const&) = delete;
+
     constexpr ptr(ptr&& other) : view<T>{other.p}, MaybeEmpty<Deleter>{other} { other.p = nullptr; }
 
     constexpr ptr& operator= (ptr const&) = delete;
+
     constexpr ptr& operator= (ptr&& other) { p = other.p; other.p = nullptr; return *this; }
 
     CORE_CONSTEXPR_DESTRUCTOR
