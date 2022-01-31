@@ -48,28 +48,20 @@ namespace detail {
     template <class Del, typename T>
     using get_pointer_type = decltype( get_pointer_type_impl<Del,T>( std::declval<T>() ) );
 
-    template <class Del>
-    struct DeleterType {
-        static_assert(Type<Del>(!is_reference), "<!> Instantiation Error");
-        using lval_ref = const Del&;
-        using good_rval_ref = Del&&;
-        // enum{ rval_overload = true };
-    };
+
+    template <typename T>
+    using unref = std::remove_reference_t<T>;
 
     template <class Del>
-    struct DeleterType<Del&> {
-        using lval_ref = Del&;
-        using bad_rval_ref = Del&&;
-        // enum{ rval_overload = false };
-    };
+    using Ref = typename decltype(
+        Type<Del>.match(
+            is<unref<Del> const&>   >>  Type<Del>,
+            is_lvalue_reference     >>  Type<Del &>,
+            !is_reference           >>  Type<Del const&>
+        )
+    )::type;
 
-    template <class Del>
-    struct DeleterType<const Del&> {
-        using lval_ref = const Del&;
-        using bad_rval_ref = const Del&&;
-        // enum{ rval_overload = false };
-    };
-
+    // using Test = Ref<int&>;
 }
 
 // By inheriting from view<T> we can pass templated ptr<T> into functions expecting view<T>  
@@ -84,7 +76,7 @@ public:
     using element_type = T;
     using deleter_type = Deleter;
 
-
+    /// Constructors:
     // (1)
     template <class D = Deleter, typename= std::enable_if_t<
         Type<D>(is_default_constructible && !is_pointer)
@@ -102,41 +94,41 @@ public:
     template <class D = Deleter, typename= std::enable_if_t<
         Type<D>(is_default_constructible && !is_pointer)
     >>
-    explicit constexpr ptr (pointer p_) noexcept 
-    : view<T>{p_}
-    , MaybeEmpty<Deleter>{Deleter()} {}
+    explicit constexpr ptr (pointer __p) noexcept : view<T>{__p} , MaybeEmpty<Deleter>{Deleter()} {}
 
 
     // (3.)
     template <
-        class DRef = typename detail::DeleterType<deleter_type>::lval_ref ,
         class D = Deleter, 
         typename= std::enable_if_t<
-            Type<D>(is_constructible_from<DRef>)
+            Type<D>(is_copy_constructible)
         >
     >
-    constexpr ptr (pointer p_, DRef d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{d_} {}
+    constexpr ptr (pointer __p, detail::Ref<D> __d) noexcept : view<T>{__p}, MaybeEmpty<Deleter>{__d} {}
 
 
     // (4.a)
     template <
-        class DType = detail::DeleterType<deleter_type>,
         class D = Deleter, 
         typename= std::enable_if_t<
-            // detail::DeleterType<deleter_type>::rval_overload &&
-            Type<D>(is_constructible_from<typename DType::rval_ref>)
+            Type<D>(is_move_constructible)
         >
     >
-    constexpr ptr (pointer p_, typename DType::good_rval_ref d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{std::move(d_)} {}
+    constexpr ptr (pointer __p, std::enable_if_t<Type<D>(!is_lvalue_reference), D&&> __d) noexcept 
+    : view<T>{__p}, MaybeEmpty<Deleter>{std::move(__d)} {}
 
     // (4.b)
-    template <class DType = detail::DeleterType<deleter_type>>
-    constexpr ptr (pointer p_, typename DType::bad_rval_ref d_) noexcept = delete;
+    template <
+        class D = Deleter,
+        class RawD = std::remove_reference_t<D>
+    >
+    constexpr ptr (pointer __p, std::enable_if_t<Type<D>(is_lvalue_reference), RawD&&> __d) noexcept = delete;
 
 
+    /// Copy & Move:
     ptr(ptr const&) = delete;
 
-    constexpr ptr(ptr&& other) : view<T>{other.p}, MaybeEmpty<Deleter>{other} { other.p = nullptr; }
+    constexpr ptr(ptr&& other) : view<T>{other.release()}, MaybeEmpty<Deleter>{other} {}
 
     constexpr ptr& operator= (ptr const&) = delete;
 
@@ -145,15 +137,18 @@ public:
     CORE_CONSTEXPR_DESTRUCTOR
     ~ptr() noexcept { if (p) MaybeEmpty<Deleter>::get()(p); }
     
-    explicit operator bool() { return p != nullptr; }
+    explicit operator bool() const noexcept { return p != nullptr; }
 
-    T& operator* () { return view<T>::operator*(); }
-    T* operator->() { return view<T>::operator->(); }
+    std::add_lvalue_reference_t<T> operator* () const noexcept { return view<T>::operator*(); }
+    pointer operator->() const noexcept { return view<T>::operator->(); }
 
     const T& operator* () const { return view<T>::operator*(); }
     const T* operator->() const { return view<T>::operator->(); }
 
-    T * unsafe_raw_ptr() { return p; }
+    constexpr auto unsafe_raw_ptr() const noexcept -> pointer { return p; }
+    constexpr auto release() noexcept -> pointer { pointer tmp = p; p = nullptr; return tmp; }
+    constexpr auto get_deleter() noexcept -> deleter_type& { return *this; }
+    constexpr auto get_deleter() const noexcept -> deleter_type const& { return *this; }
 
     template <class OtherDeleter>
     constexpr auto with_deleter(OtherDeleter const& del=OtherDeleter()) && -> ptr<T, OtherDeleter> {
