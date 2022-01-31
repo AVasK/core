@@ -86,51 +86,51 @@ public:
 
 
     // (1)
-    template <class D = meta::identity<Deleter>, typename= std::enable_if_t<
-        Type<typename D::type>(is_default_constructible && !is_pointer)
+    template <class D = Deleter, typename= std::enable_if_t<
+        Type<D>(is_default_constructible && !is_pointer)
     >>
     constexpr ptr () noexcept : view<T>{}, MaybeEmpty<Deleter>{Deleter()} {}
 
     // (1)
-    template <class D = meta::identity<Deleter>, typename= std::enable_if_t<
-        Type<typename D::type>(is_default_constructible && !is_pointer)
+    template <class D = Deleter, typename= std::enable_if_t<
+        Type<D>(is_default_constructible && !is_pointer)
     >>
     constexpr ptr (std::nullptr_t) noexcept : view<T>{nullptr}, MaybeEmpty<Deleter>{Deleter()} {}
 
 
     // (2)
-    template <class Dummy = meta::identity<Deleter>, typename= std::enable_if_t<
-        Type<typename Dummy::type>(is_default_constructible && !is_pointer)
+    template <class D = Deleter, typename= std::enable_if_t<
+        Type<D>(is_default_constructible && !is_pointer)
     >>
     explicit constexpr ptr (pointer p_) noexcept 
     : view<T>{p_}
     , MaybeEmpty<Deleter>{Deleter()} {}
 
 
+    // (3.)
     template <
         class DRef = typename detail::DeleterType<deleter_type>::lval_ref ,
-        class D = meta::identity<Deleter>, 
+        class D = Deleter, 
         typename= std::enable_if_t<
-            Type<typename D::type>(is_constructible_from<DRef>)
+            Type<D>(is_constructible_from<DRef>)
         >
     >
     constexpr ptr (pointer p_, DRef d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{d_} {}
 
 
+    // (4.a)
     template <
-        class DType = detail::DeleterType<deleter_type> ,
-        class D = meta::identity<Deleter>, 
+        class DType = detail::DeleterType<deleter_type>,
+        class D = Deleter, 
         typename= std::enable_if_t<
             // detail::DeleterType<deleter_type>::rval_overload &&
-            Type<typename D::type>(is_constructible_from<typename DType::rval_ref>)
+            Type<D>(is_constructible_from<typename DType::rval_ref>)
         >
     >
-    constexpr ptr (pointer p_, typename DType::good_rval_ref d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{d_} {}
+    constexpr ptr (pointer p_, typename DType::good_rval_ref d_) noexcept : view<T>{p_}, MaybeEmpty<Deleter>{std::move(d_)} {}
 
-
-    template <
-        class DType = detail::DeleterType<deleter_type>
-    >
+    // (4.b)
+    template <class DType = detail::DeleterType<deleter_type>>
     constexpr ptr (pointer p_, typename DType::bad_rval_ref d_) noexcept = delete;
 
 
