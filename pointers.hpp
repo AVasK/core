@@ -8,34 +8,6 @@
 
 namespace core {
 
-
-// view
-template <typename T>
-class view {
-public:
-    using ptr_type = typename std::add_pointer<T>::type;
-    using value_type = T;
-
-    explicit constexpr view (T * pointer=nullptr) noexcept : p {pointer} {}
-
-    T& operator* () { return *p; }
-    T* operator->() { return p; }
-
-    const T& operator* () const { return *p; }
-    const T* operator->() const { return p; }
-
-    constexpr auto get() -> ptr_type { return p; }
-
-    template <class TBase, std::enable_if_t< Type<TBase>(is_base_of<T>) >* = nullptr>
-    constexpr operator view<TBase>() noexcept {
-        return view<TBase>(p);
-    }
-
-protected:
-    ptr_type p;
-};
-
-
 namespace detail {
     // as in unique_ptr::pointer -- std::remove_reference<Deleter>::type::pointer if that type exists,
     // otherwise T* 
@@ -62,7 +34,37 @@ namespace detail {
     )::type;
 
     // using Test = Ref<int&>;
+
+    template <typename T>
+    using add_ref = std::add_lvalue_reference_t<T>;
 }
+
+
+
+// view
+template <typename T>
+class view {
+public:
+    using pointer = std::add_pointer_t<T>;
+    using value_type = T;
+
+    explicit constexpr view (T * pointer=nullptr) noexcept : p {pointer} {}
+
+    detail::add_ref<T> operator* () const noexcept { return *p; }
+    pointer operator->() const noexcept { return p; }
+
+    constexpr auto get() -> pointer { return p; }
+
+    template <class TBase, std::enable_if_t< Type<TBase>(is_base_of<T>) >* = nullptr>
+    constexpr operator view<TBase>() noexcept {
+        return view<TBase>(p);
+    }
+
+protected:
+    pointer p;
+};
+
+
 
 // By inheriting from view<T> we can pass templated ptr<T> into functions expecting view<T>  
 template <typename T, class Deleter=std::default_delete<T>>
@@ -122,12 +124,17 @@ public:
         class D = Deleter,
         class RawD = std::remove_reference_t<D>
     >
-    constexpr ptr (pointer __p, std::enable_if_t<Type<D>(is_lvalue_reference), RawD&&> __d) noexcept = delete;
+    constexpr ptr (pointer, std::enable_if_t<Type<D>(is_lvalue_reference), RawD&&>) = delete;
 
 
     /// Copy & Move:
     ptr(ptr const&) = delete;
 
+    template <
+        class D = Deleter,
+        typename= std::enable_if_t<
+            Type<D>(!is_reference && is_move_constructible) || Type<D>(is_reference && is_nothrow_move_constructible)
+    >>
     constexpr ptr(ptr&& other) : view<T>{other.release()}, MaybeEmpty<Deleter>{other} {}
 
     constexpr ptr& operator= (ptr const&) = delete;
@@ -139,11 +146,8 @@ public:
     
     explicit operator bool() const noexcept { return p != nullptr; }
 
-    std::add_lvalue_reference_t<T> operator* () const noexcept { return view<T>::operator*(); }
+    detail::add_ref<T> operator* () const noexcept { return view<T>::operator*(); }
     pointer operator->() const noexcept { return view<T>::operator->(); }
-
-    const T& operator* () const { return view<T>::operator*(); }
-    const T* operator->() const { return view<T>::operator->(); }
 
     constexpr auto unsafe_raw_ptr() const noexcept -> pointer { return p; }
     constexpr auto release() noexcept -> pointer { pointer tmp = p; p = nullptr; return tmp; }
