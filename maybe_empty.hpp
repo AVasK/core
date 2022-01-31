@@ -6,7 +6,9 @@ namespace core {
 
 // #if (__has_cpp_attribute(no_unique_address) || __cplusplus/100 >= 2020) // Clang
 #if CORE_HAS_ATTR(NO_UNIQUE_ADDRESS)
-#   warning [[no_unique_address]] feature is used
+#   if defined CORE_DEBUG_EBCO
+#       warning [[no_unique_address]] feature is used
+#   endif
 template <class Base>
 class MaybeEmpty {
 public:
@@ -17,7 +19,9 @@ public:
     constexpr Base& get() { return elem; }
 };
 #else
-#   warning inheritance-based MaybeEmpty is used
+#   if defined CORE_DEBUG_EBCO
+#       warning inheritance-based MaybeEmpty is used
+#   endif
 template <class Base, bool Use_inheritance>
 class EBO_specialized : public Base {
 public:
