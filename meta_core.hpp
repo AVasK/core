@@ -16,6 +16,14 @@ struct identity {
     using type = T;
 };
 
+template <class Base>
+struct inherit_from : Base {
+    using base = Base;
+};
+
+template <typename T>
+struct type_is : identity<T> {};
+
 
 template <typename T, typename... Ts>
 struct first : identity<T> {};
@@ -25,6 +33,18 @@ using valid = typename first<void, Ts...>::type;
 
 
 struct nothing {};
+
+template <typename _, bool flag>
+struct dependent_flag {
+    static constexpr bool value = flag;
+};
+
+struct error { // gives static_assert error on instantiation.
+    template <typename _=nothing>
+    constexpr error() noexcept {
+        static_assert(dependent_flag<_,false>::value, "Error!");
+    }
+};
 
 
 template <typename T>
@@ -252,6 +272,89 @@ template <metafunc F, class List>
 using transform = typename detail::transform_impl<F,List>::type;
 
 
+
+// apply_transforms
+namespace detail {
+    template <class Args, metafunc... Fs>
+    struct apply_transforms_impl;
+
+    template <
+        metafunc List, typename... Ts,
+        metafunc... Fs
+    >
+    struct apply_transforms_impl<List<Ts...>, Fs...> {
+        using type = List< Fs<Ts>... >;
+    };
+}
+
+template <class Args, metafunc... Fs>
+using apply_transforms = typename detail::apply_transforms_impl<Args,Fs...>::type;
+
+
+
+// take 
+namespace detail {
+    template <class List, size_t N, class Result>
+    struct take_impl;
+
+    template <
+        metafunc List, typename T, typename... Ts, 
+        metafunc Res, typename... Xs
+    >
+    struct take_impl<List<T, Ts...>, 0, Res<Xs...>> {
+        using type = Res<Xs...>;
+    };
+
+    template <
+        metafunc List, 
+        size_t N, 
+        metafunc Res, typename... Xs
+    >
+    struct take_impl<List<>, N, Res<Xs...>> {
+        using type = Res<Xs...>;
+    };
+
+    template <
+        metafunc List, typename T, typename... Ts,
+        size_t N,
+        metafunc Res, typename... Xs
+    >
+    struct take_impl<List<T, Ts...>, N, Res<Xs...>> : take_impl<List<Ts...>, N-1, Res<Xs..., T>> {};
+
+}
+
+template <typename List, size_t N, metafunc Res=typelist>
+using take = typename detail::take_impl<List, N, Res<>>::type;
+
+// drop 
+namespace detail {
+    template <class List, size_t N>
+    struct drop_impl;
+
+    template <
+        metafunc List, typename T, typename... Ts
+    >
+    struct drop_impl<List<T, Ts...>, 0> {
+        using type = List<T,Ts...>;
+    };
+
+    template <metafunc List, size_t N>
+    struct drop_impl<List<>, N> {
+        using type = List<>;
+    };
+
+    template <
+        metafunc List, typename T, typename... Ts,
+        size_t N
+    >
+    struct drop_impl<List<T, Ts...>, N> : drop_impl<List<Ts...>, N-1> {};
+
+}
+
+template <typename List, size_t N>
+using drop = typename detail::drop_impl<List, N>::type;
+
+
 // zip
 namespace detail {
     template <class List1, class List2>
@@ -458,6 +561,7 @@ constexpr bool any(std::initializer_list<bool> vs) noexcept {
     return false;
 }
 #endif
+
 
 #undef metafunc
 } //namespace meta
