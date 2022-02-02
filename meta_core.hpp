@@ -131,19 +131,41 @@ using defer = detail::defer_impl<F, Args...>;
 
 // ===== type_at =====
 namespace detail {
+    ///TODO: Implement a non-naive solution for compilers other than Clang
     template <size_t Index, typename... Ts>
-    struct type_at_impl {
-        ///TODO: Implement a non-naive solution for compilers other than Clang
+    struct type_at_impl;
+
+    template <size_t Index, typename T, typename... Ts>
+    struct type_at_impl<Index,T,Ts...> : type_at_impl<Index-1, Ts...> {};
+    
+    template <typename T, typename... Ts>
+    struct type_at_impl<0, T, Ts...> {
+        using type = T;
     };
 }
 
-#if defined CORE_CLANG && __has_builtin(__type_pack_element)
+#if __has_builtin(__type_pack_element)
+#   warning __type_pack_element used!
 template <size_t Index, typename... Ts>
 using type_at = __type_pack_element<Index, Ts...>;
 #else 
 template <size_t Index, typename... Ts>
 using type_at = typename detail::type_at_impl<Index, Ts...>::type;
 #endif
+
+
+namespace detail {
+    template <class L, size_t Index>
+    struct list_at_impl;
+
+    template <size_t Index, metafunc List, typename... Ts>
+    struct list_at_impl<List<Ts...>, Index> {
+        using type = type_at<Index, Ts...>;
+    };
+}
+
+template <class L, size_t Index>
+using list_at = typename detail::list_at_impl<L, Index>::type;
 
 // ===== quote =====
 template <metafunc F>
@@ -377,7 +399,7 @@ namespace detail {
 
     template <metafunc List1, typename... T1s, metafunc List2, typename... T2s, metafunc F>
     struct zip_with_impl <List1<T1s...>, List2<T2s...>, F>{
-        using type = typelist< F<T1s, T2s>... >;
+        using type = List1< F<T1s, T2s>... >;
     };
 }
 
