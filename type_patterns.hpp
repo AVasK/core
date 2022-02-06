@@ -37,7 +37,7 @@ using pattern = match<P,P>;
 
 template <typename T, bool result>
 struct match_result {
-    enum{ value = result };
+    static constexpr bool value = result;
     using type = T;
 };
 
@@ -107,7 +107,7 @@ struct match <const T[N], const P[N]> : match<T,P> {
 template <typename TR, typename...Ts, typename PR, typename... Ps>
 struct match <TR(Ts...), PR(Ps...)> {
     // if sizeof...(Ts) == sizeof...(Ps)
-    enum{ value = match<TR,PR>::value && meta::all({ match<Ts,Ps>::value... }) };
+    static constexpr bool value = match<TR,PR>::value && meta::all({ match<Ts,Ps>::value... });
     using type = meta::concat< func_match<typename match<TR,PR>::type>, matched_types<typename match<Ts,Ps>::type...> >;
 
 
@@ -135,7 +135,7 @@ struct match <C<Ts...>, C<Ps...>> {
     // otherwise
     template <typename T, typename P, class Enabled=void>
     struct choose {
-        enum{ value = false };
+        static constexpr bool value = false;
         using type = meta::error;
 
         template <typename X>
@@ -148,7 +148,7 @@ struct match <C<Ts...>, C<Ps...>> {
     std::enable_if_t<
         sizeof...(Types) == sizeof...(Patterns)
     >> {
-        enum{ value = meta::all({ match<Ts,Ps>::value ... }) };
+        static constexpr bool value = meta::all({ match<Ts,Ps>::value ... });
         using type = matched_types< typename match<Ts,Ps>::type ... >;
 
         template <typename... Xs>
@@ -159,22 +159,25 @@ struct match <C<Ts...>, C<Ps...>> {
     template <typename... Types, typename... Patterns>
     struct choose<C<Types...>, C<Patterns...>, 
     std::enable_if_t< 
-        (sizeof...(Types) > sizeof...(Patterns)) &&
+        (sizeof...(Types) != sizeof...(Patterns)) &&
         std::is_same<meta::type_at<sizeof...(Patterns)-1, Patterns...>, ___>::value 
     >> {
         // enum{ value = meta::all({ match<Ts,Ps>::value ... }) };
-        enum{ value = true }; ///TODO: Fix this!
-        static constexpr auto N = std::min({sizeof...(Types), sizeof...(Patterns)});
-        using type = meta::zip_with< 
-            //              matches< Types[0:N-1]..., variadic<Types[N-1:_]...> >
-            meta::append< meta::take<matched_types<Types...>, N-1>, meta::drop<variadic<Types...>, N-1> >,
-            meta::take<matched_types<Patterns...>, N, variadic>,
-            match
+        static constexpr bool value = true; ///TODO: Fix this!
+        static constexpr auto N_Ps = sizeof...(Patterns);
+        using type = 
+        meta::transform< 
+            meta::extract_type,
+            meta::zip_with< 
+                meta::take<N_Ps, meta::append< meta::take<N_Ps-1, matched_types<Types...>>, meta::drop<N_Ps-1, variadic<Types...>> >>,
+                meta::typelist<Patterns...>,
+                match
+            >
         >;
     };
 
 
-    enum{ value = choose<C<Ts...>, C<Ps...>>::value };
+    static constexpr bool value = choose<C<Ts...>, C<Ps...>>::value;
     using type = typename choose<C<Ts...>, C<Ps...>>::type;
     
 };
