@@ -265,8 +265,10 @@ using append = typename detail::append_impl<List,T...>::type;
 
 // map
 namespace detail {
-    template <metafunc F, class List>
-    struct apply_impl;
+    template <metafunc F, class T>
+    struct apply_impl {
+        using type = F<T>;
+    };
 
     template <metafunc F, metafunc List, typename... Ts>
     struct apply_impl<F, List<Ts...>> {
