@@ -5,7 +5,7 @@
 #include <cctype> // isspace
 #include "compiler_detect.hpp"
 #include "macros.hpp"
-#include "meta_core.hpp" // metaprogramming
+#include "meta.hpp" // metaprogramming
 #include "constexpr_types.hpp" // cx_optional, cx_array
 #include "type_predicates.hpp"
 

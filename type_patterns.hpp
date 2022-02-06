@@ -2,8 +2,7 @@
 
 #include <iostream>
 #include <type_traits>
-#include "meta_core.hpp"
-#include "typesystem.hpp" // Temporary - remove after testing!
+#include "meta.hpp"
 
 namespace core {
 
