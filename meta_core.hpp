@@ -89,6 +89,25 @@ namespace detail {
     };
 }
 
+
+// ===== rename =====
+namespace detail {
+    template <class From, template<typename...> class To>
+    struct rename_impl;
+
+    template<
+        template<typename...> class List, typename... Ts,
+        template<typename...> class To
+    >
+    struct rename_impl< List<Ts...>, To > {
+        using type = To<Ts...>;
+    };
+}
+
+template <class From, template<typename...> class To>
+using rename = typename detail::rename_impl<From, To>::type;
+
+
 template <typename... Ts>
 using head = typename detail::head_impl<Ts...>::type;
 
