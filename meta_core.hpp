@@ -350,7 +350,7 @@ namespace detail {
 
 }
 
-template <typename List, size_t N, metafunc Res=typelist>
+template <size_t N, typename List, metafunc Res=typelist>
 using take = typename detail::take_impl<List, N, Res<>>::type;
 
 // drop 
@@ -378,7 +378,7 @@ namespace detail {
 
 }
 
-template <typename List, size_t N>
+template <size_t N, typename List>
 using drop = typename detail::drop_impl<List, N>::type;
 
 
