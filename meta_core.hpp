@@ -145,10 +145,15 @@ namespace detail {
 }
 
 #if __has_builtin(__type_pack_element)
-#   warning __type_pack_element used!
+#   ifdef CORE_DEBUG_TYPE_PACK_ELEMENT
+#       warning <!> "type_at" uses builtin __type_pack_element
+#   endif
 template <size_t Index, typename... Ts>
 using type_at = __type_pack_element<Index, Ts...>;
 #else 
+#   ifdef CORE_DEBUG_TYPE_PACK_ELEMENT
+#       warning <!> builtin __type_pack_element unavailable
+#   endif
 template <size_t Index, typename... Ts>
 using type_at = typename detail::type_at_impl<Index, Ts...>::type;
 #endif
