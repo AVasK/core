@@ -7,8 +7,9 @@
 
 namespace core {
 
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-///TODO: Cleanup!
 struct wildcard {};
 using _ = wildcard;
 
@@ -66,6 +67,26 @@ struct match<variadic<Ts...>, ___> : match_result<matched_types<Ts...>, true> {
     template <typename... Xs> using pass = meta::typelist<Xs...>;
 };
 
+template <typename... Ts>
+struct match<variadic<Ts...>, ___&> {
+    static constexpr bool value = meta::all({ match<Ts, _&>::value... });
+    using type = meta::transform< meta::extract_type, matched_types< match<Ts, _&>... >>;
+    template <typename... Xs> using pass = meta::typelist<Xs...>;
+};
+
+template <typename... Ts>
+struct match<variadic<Ts...>, ___ const> {
+    static constexpr bool value = meta::all({ match<Ts, _ const>::value... });
+    using type = meta::transform< meta::extract_type, matched_types< match<Ts, _ const>... >>;
+    template <typename... Xs> using pass = meta::typelist<Xs...>;
+};
+
+template <typename... Ts>
+struct match<variadic<Ts...>, ___ const&> {
+    static constexpr bool value = meta::all({ match<Ts, _ const&>::value... });
+    using type = meta::transform< meta::extract_type, matched_types< match<Ts, _ const&>... >>;
+    template <typename... Xs> using pass = meta::typelist<Xs...>;
+};
 
 template <typename T, typename P>
 struct match <const T, const P> : match<T,P> {
@@ -149,7 +170,7 @@ struct match <C<Ts...>, C<Ps...>> {
         std::enable_if_t<(
             ( sizeof...(Types) == sizeof...(Patterns) ) 
             &&
-            !meta::contains<meta::typelist<Patterns...>, ___>::value
+            !meta::contains<meta::transform<remove_cvref_t, meta::typelist<Patterns...>>, ___>::value
         )> 
     > {
         static constexpr bool value = meta::all({ match<Ts,Ps>::value ... });
@@ -164,9 +185,8 @@ struct match <C<Ts...>, C<Ps...>> {
     struct choose<C<Types...>, C<Patterns...>, 
     std::enable_if_t< 
         (sizeof...(Types) >= sizeof...(Patterns)-1) &&
-        std::is_same<meta::type_at<sizeof...(Patterns)-1, Patterns...>, ___>::value 
+        std::is_same<remove_cvref_t<meta::type_at<sizeof...(Patterns)-1, Patterns...>>, ___>::value 
     >> {
-        // enum{ value = meta::all({ match<Ts,Ps>::value ... }) };
         static constexpr auto N_Ps = sizeof...(Patterns);
 
         using list = meta::zip_with< 
@@ -180,7 +200,7 @@ struct match <C<Ts...>, C<Ps...>> {
             list
         >;
 
-        static constexpr bool value = meta::all<list>(); ///TODO: Fix this!
+        static constexpr bool value = meta::all<list>();
     };
 
 
