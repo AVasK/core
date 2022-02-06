@@ -144,10 +144,14 @@ struct match <C<Ts...>, C<Ps...>> {
 
     // if sizeof...(Ts) == sizeof...(Ps)
     template <typename... Types, typename... Patterns>
-    struct choose<C<Types...>, C<Patterns...>, 
-    std::enable_if_t<
-        sizeof...(Types) == sizeof...(Patterns)
-    >> {
+    struct choose< 
+        C<Types...>, C<Patterns...>, 
+        std::enable_if_t<(
+            ( sizeof...(Types) == sizeof...(Patterns) ) 
+            &&
+            !meta::contains<meta::typelist<Patterns...>, ___>::value
+        )> 
+    > {
         static constexpr bool value = meta::all({ match<Ts,Ps>::value ... });
         using type = matched_types< typename match<Ts,Ps>::type ... >;
 
@@ -159,21 +163,24 @@ struct match <C<Ts...>, C<Ps...>> {
     template <typename... Types, typename... Patterns>
     struct choose<C<Types...>, C<Patterns...>, 
     std::enable_if_t< 
-        (sizeof...(Types) != sizeof...(Patterns)) &&
+        (sizeof...(Types) >= sizeof...(Patterns)-1) &&
         std::is_same<meta::type_at<sizeof...(Patterns)-1, Patterns...>, ___>::value 
     >> {
         // enum{ value = meta::all({ match<Ts,Ps>::value ... }) };
-        static constexpr bool value = true; ///TODO: Fix this!
         static constexpr auto N_Ps = sizeof...(Patterns);
-        using type = 
-        meta::transform< 
-            meta::extract_type,
-            meta::zip_with< 
-                meta::take<N_Ps, meta::append< meta::take<N_Ps-1, matched_types<Types...>>, meta::drop<N_Ps-1, variadic<Types...>> >>,
-                meta::typelist<Patterns...>,
-                match
-            >
+
+        using list = meta::zip_with< 
+            meta::take<N_Ps, meta::append<meta::take<N_Ps-1, matched_types<Types...>>, meta::drop<N_Ps-1, variadic<Types...>> >>,
+            meta::typelist<Patterns...>,
+            match
         >;
+
+        using type = meta::transform< 
+            meta::extract_type,
+            list
+        >;
+
+        static constexpr bool value = meta::all<list>(); ///TODO: Fix this!
     };
 
 
