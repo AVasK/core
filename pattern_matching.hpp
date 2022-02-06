@@ -224,6 +224,7 @@ namespace pattern_matching {
 
     template <class P>
     struct Pattern : detail::TypePredicate {
+        using token = P;
         using this_pattern = detail::match<P,P>;
 
         template <typename T>
@@ -243,14 +244,15 @@ namespace pattern_matching {
     constexpr auto pattern = Pattern<P>{};
 
     template <class From, class To>
-    struct ConversionPattern : detail::TypePredicate, detail::TypeTransformation {
+    struct ConversionPattern : detail::TypeCase {
         template <typename T>
-        constexpr static bool eval() {
-            return From{}.template matches<T>() && To{}.template matches< meta::invoke<From,T> >();
+        constexpr static bool test() {
+            return From{}.template matches<T>();
+                //    To{}.template matches< meta::invoke<From,T> >();
         }
 
         template <typename T>
-        using fn = meta::apply<To::template substitute, meta::invoke<From,T> >;
+        using fn = typename To::template substitute< meta::invoke<From,T> >;
     };
 
 
@@ -266,7 +268,7 @@ namespace pattern_matching {
         typename=std::enable_if_t<is_pattern<From>::value && is_pattern<To>::value>
     >
     constexpr auto operator>> (From, To) {
-        return detail::TypeMorph<Morph,Morph>{};
+        return Morph{};
     }
 }
 
