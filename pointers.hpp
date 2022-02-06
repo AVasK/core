@@ -5,6 +5,7 @@
 #include "typesystem.hpp"
 #include "macros.hpp"
 #include "maybe_empty.hpp"
+#include "pattern_matching.hpp"
 
 namespace core {
 
@@ -20,16 +21,12 @@ namespace detail {
     template <class Del, typename T>
     using get_pointer_type = decltype( get_pointer_type_impl<Del,T>( std::declval<T>() ) );
 
-
-    template <typename T>
-    using unref = std::remove_reference_t<T>;
-
     template <class Del>
     using Ref = typename decltype(
         Type<Del>.match(
-            is<unref<Del> const&>   >>  Type<Del>,
-            is_lvalue_reference     >>  Type<Del &>,
-            !is_reference           >>  Type<Del const&>
+            pattern<_ const&>   >>    pattern<_ const&>,
+            pattern<_&>         >>    pattern<_&>,
+            !is_reference       >>    Type<Del const&>// pattern<_ const&> //TODO
         )
     )::type;
 
