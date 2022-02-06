@@ -50,7 +50,6 @@ struct error { // gives static_assert error on instantiation.
 template <typename T>
 using extract_type = typename T::type;
 
-
 template <typename T>
 struct always_true : std::true_type {};
 
@@ -587,6 +586,28 @@ constexpr bool all(std::initializer_list<bool> vs) noexcept {
         if (!flag) { return false; }
     }
     return true;
+}
+
+
+namespace detail {
+    template <typename T>
+    struct all_impl;
+
+    template <template<typename...> class C, typename... Ts>
+    struct all_impl<C<Ts...>> {
+        constexpr bool operator()() {
+            constexpr bool values[] = {Ts::value...};
+            for (auto const& v : values) {
+                if (!v) return false;
+            }
+            return true;
+        }
+    };
+}
+
+template <typename List>
+constexpr bool all() noexcept {
+    return detail::all_impl<List>{}();
 }
 
 
