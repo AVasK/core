@@ -88,6 +88,19 @@ Type<A>.match(
     `predicate >> [transform | Type]`
     the predicate should be created via bind_predicate or rbind_predicate.
 
+#### NEW: Pattern Matching with _ and ___ (for single-type and variadic-type-pack respectively)
+> Example from `pointers.hpp` :
+
+```C++
+using Ref = typename decltype(
+    Type<Del>.match(
+        pattern< _ const& >  >>  pattern< _ const& >,
+        pattern< _& >        >>  pattern< _& >,
+        pattern< _ >         >>  pattern< _ const& >
+    )
+)::type;
+```
+
 ### Types:
 ```C++
 struct TypeList<Ts...> 
