@@ -39,6 +39,16 @@ constexpr auto Types = TypeList<Ts...>{};
 #endif
 
 
+/**
+ * @brief Extract type pack Ts... from SomeType<Ts...>
+ * 
+ * @tparam List List<Ts...>
+ * @return TypeList<Ts...>
+ */
+template <class List>
+constexpr auto extract_types() -> meta::rename<List, TypeList> { return {}; }
+
+
 template <typename T>
 struct TypeOf {
     using type = T;
