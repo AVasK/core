@@ -24,13 +24,13 @@ namespace detail {
     template <class Del>
     using Ref = typename decltype(
         Type<Del>.match(
-            pattern<_ const&>   >>    pattern<_ const&>,
-            pattern<_&>         >>    pattern<_&>,
-            !is_reference       >>    Type<Del const&>// pattern<_ const&> //TODO
+            pattern< _ const& >  >>  pattern< _ const& >, // if Del is a const&,
+            pattern< _& >        >>  pattern< _& >,       // else, if Del is &
+            pattern< _ >         >>  pattern< _ const& >  // otherwise,
         )
     )::type;
 
-    // using Test = Ref<int&>;
+    // using Test = Ref<int>;
 
     template <typename T>
     using add_ref = std::add_lvalue_reference_t<T>;
