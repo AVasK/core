@@ -5,6 +5,7 @@
 
 #include "range.hpp"
 #include "class/extension.hpp"
+#include "class/mixins.hpp"
 
 namespace core {
 
@@ -18,7 +19,7 @@ namespace core {
 template <typename T>
 class cx_optional {
 public:
-    constexpr cx_optional (const T& v) : data{v}, is_empty{false} {}
+    constexpr cx_optional (const T& v) : _data{v}, is_empty{false} {}
     constexpr cx_optional () : is_empty{true} {};
 
     struct cx_optional_empty {};
@@ -26,7 +27,7 @@ public:
     constexpr operator bool() const { return !is_empty; }
 
     constexpr auto value() const {
-        if (!is_empty) return data;
+        if (!is_empty) return _data;
         else throw cx_optional_empty {};
     }
 
@@ -39,7 +40,7 @@ public:
     }
 
 private:
-    union { T data; };
+    union { T _data; };
     bool is_empty;
 };
 
@@ -67,7 +68,7 @@ public:
     constexpr cx_array (std::initializer_list<T> list) {
         size_t i=0;
         for (auto v : list) {
-            data[i++] = v;
+            _data[i++] = v;
         }
     }
 
@@ -75,14 +76,14 @@ public:
     template <size_t M>
     constexpr cx_array (cx_array<T,M> const& other) {
         for (auto i : range(N)) {
-            data[i] = other[i];
+            _data[i] = other[i];
         }
     }
 
 
     constexpr cx_array (T const* other) {
         for (auto i : range(N)) {
-            data[i] = other[i];
+            _data[i] = other[i];
         }
     }
 
@@ -109,10 +110,10 @@ public:
         "the result of concatenation of two arrays should have size exaclty equal to the sum of their sizes");
         size_t i=0;
         for (auto && v : a) {
-            data[i++] = v;
+            _data[i++] = v;
         }
         for (auto && w : b) {
-            data[i++] = w;
+            _data[i++] = w;
         }
     }
 
@@ -123,10 +124,10 @@ public:
         "the result of concatenation of two arrays should have size exaclty equal to the sum of their sizes");
         size_t i=0;
         for (auto && v : a) {
-            data[i++] = std::move(v);
+            _data[i++] = std::move(v);
         }
         for (auto && w : b) {
-            data[i++] = std::move(w);
+            _data[i++] = std::move(w);
         }
     }
 
@@ -141,7 +142,7 @@ public:
     template <size_t From, size_t To>
     constexpr auto slice() const -> cx_array<T, To-From> {
         static_assert(0 <= From && From <= N && 0 <= To && To <= N && To > From ,"Slice out of bounds of the array");
-        return {&data[From]};
+        return {&_data[From]};
 
     }
 
@@ -154,16 +155,16 @@ public:
     template <size_t Idx>
     constexpr auto at() const -> T {
         static_assert(0<= Idx && Idx < N, "cx_array::at<Idx>: Index `Idx` out of range");
-        return data[Idx];
+        return _data[Idx];
     }
 
 
     constexpr auto operator[] (size_t i) -> T& {
-        return data[i];
+        return _data[i];
     }
 
     constexpr auto operator[] (size_t i) const -> T const& {
-        return data[i];
+        return _data[i];
     }
 
     constexpr auto size() const -> size_t { return N; }
@@ -178,18 +179,18 @@ public:
     };
 
     constexpr auto max() const {
-        auto res = value_with_position(data[0], 0);
+        auto res = value_with_position(_data[0], 0);
         for (auto i : range(N)) {
-            if (data[i] > res) res = {data[i], i};
+            if (_data[i] > res) res = {_data[i], i};
         }
         return res;
     }
 
 
     constexpr auto min() const {
-        auto res = value_with_position(data[0], 0);
+        auto res = value_with_position(_data[0], 0);
         for (auto i : range(N)) {
-            if (data[i] < res) res = {data[i], i};
+            if (_data[i] < res) res = {_data[i], i};
         }
         return res;
     }
@@ -199,7 +200,7 @@ public:
         if (from >= N) return {};
 
         for (auto i : range(from, N)) {
-            if (data[i] == value) {
+            if (_data[i] == value) {
                 return i;
             }
         }
@@ -210,7 +211,7 @@ public:
     constexpr auto count(T value, size_t from=0) const -> size_t {
         size_t count = 0;
         for (auto i : range(from, N)) {
-            if (data[i] == value) {
+            if (_data[i] == value) {
                 count += 1;
             }
         }
@@ -223,17 +224,19 @@ public:
         if (from >= N) return {};
 
         for (auto i : range(from, N)) {
-            if ( f(data[i]) ) {
+            if ( f(_data[i]) ) {
                 return i;
             }
         }
         return {};
     }
 
+    const T* data() const { return &_data[0]; }
+
 
     // Iterators
-    constexpr auto begin() const noexcept { return &data[0]; }
-    constexpr auto end()   const noexcept { return &data[N]; }
+    constexpr auto begin() const noexcept { return &_data[0]; }
+    constexpr auto end()   const noexcept { return &_data[N]; }
 
     // Printing
     friend auto operator<< (std::ostream& os, cx_array const& arr) -> std::ostream& {
@@ -246,7 +249,7 @@ public:
     }
 
 private:
-    T data[N];
+    T _data[N];
 };
 
 template <typename T, size_t N, size_t M>
@@ -255,9 +258,18 @@ constexpr auto operator+ (cx_array<T,N> const& a, cx_array<T,M> const& b) -> cx_
 }
 
 
+/////////////// [ cx_string ] //////////////
+CORE_MIXIN( MCopyableFromBase,
+    template <typename T>
+    constexpr MCopyableFromBase( T && other ) : Base{ std::forward<T>(other) } {}
+);
+
+CORE_MIXIN( MToString,
+    operator std::string() const { return std::string( this->data(), this->size() ); }
+);
 
 template <std::size_t N>
-using cx_string = core::extend< cx_array<char,N> >;
+using cx_string = core::extend< cx_array<char,N>, MCopyableFromBase, MToString >;
 
 template <size_t N>
 auto operator<< (std::ostream& os, cx_string<N> const& cxstr) -> std::ostream& {
@@ -272,10 +284,14 @@ constexpr auto operator+ (cx_string<N> const& a, cx_string<M> const& b) -> cx_st
     return {a, b};
 }
 
-
 template <size_t N>
 constexpr auto cx_str (const char (&cstr) [N]) {
     return cx_string<N-1>{&cstr[0]};
+}
+
+template <size_t N>
+constexpr auto cx_str (cx_array<char, N> const& arr) {
+    return cx_string<N>{arr};
 }
 
 

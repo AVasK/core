@@ -1,7 +1,8 @@
 #pragma once
 
 #include <type_traits>
-#include "macros.hpp"
+#include "../meta.hpp"
+#include "../macros.hpp"
 
 namespace core {
 inline namespace typesystem {
