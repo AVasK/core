@@ -66,7 +66,7 @@
 #   define CORE_HAS_ATTR_NODISCARD
 #endif
 
-
+/////////// [ NO_UNIQUE_ADDRESS ] //////////
 #if __cplusplus/100 >= 2020 || __has_cpp_attribute(no_unique_address)
 #   define NO_UNIQUE_ADDRESS [[no_unique_address]]
 // MSVC:
@@ -74,15 +74,22 @@
 #elif defined CORE_MSVC && _MSC_VER >= 1929 // VS2019 v16.10 and later (_MSC_FULL_VER >= 192829913 for VS 2019 v16.9)
 // Works with /std:c++14 and /std:c++17, and performs optimization
 #   define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#else
-// no-op in MSVC v14x ABI
-#define NO_UNIQUE_ADDRESS
+#else // no-op in MSVC v14x ABI
+#   define NO_UNIQUE_ADDRESS 
+#endif
 
 
+//////////// [ NODISCARD ] ////////////
 #if CORE_HAS_ATTR(NODISCARD)
 #define NODISCARD [[nodiscard]]
 #else
 #define NODISCARD
 #endif
 
+
+/////////// [ PRETTY_FUNC ] //////////
+#if defined CORE_GCC || defined CORE_CLANG
+#   define PRETTY_FUNC __PRETTY_FUNCTION__
+#elif defined CORE_MSVC
+#   define PRETTY_FUNC __FUNCSIG__
 #endif
