@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "range.hpp"
+#include "class/extension.hpp"
 
 namespace core {
 
@@ -60,6 +61,9 @@ constexpr auto make_cx_optional(const T& value) {
 template <typename T, std::size_t N>
 class cx_array {
 public:
+
+    explicit constexpr cx_array() = default; 
+
     constexpr cx_array (std::initializer_list<T> list) {
         size_t i=0;
         for (auto v : list) {
@@ -80,6 +84,15 @@ public:
         for (auto i : range(N)) {
             data[i] = other[i];
         }
+    }
+
+
+    static constexpr cx_array fill(T fill_value) {
+        auto arr = cx_array();
+        for (auto i : core::range(N)) {
+            arr[i] = fill_value;
+        }
+        return arr;
     }
 
     
@@ -140,11 +153,16 @@ public:
      */
     template <size_t Idx>
     constexpr auto at() const -> T {
-        static_assert(0<= Idx && Idx < N, "cx_array::operator[]: Index `Idx` out of range");
+        static_assert(0<= Idx && Idx < N, "cx_array::at<Idx>: Index `Idx` out of range");
         return data[Idx];
     }
 
-    constexpr auto operator[] (size_t i) const -> T {
+
+    constexpr auto operator[] (size_t i) -> T& {
+        return data[i];
+    }
+
+    constexpr auto operator[] (size_t i) const -> T const& {
         return data[i];
     }
 
@@ -212,14 +230,15 @@ public:
         return {};
     }
 
+
     // Iterators
     constexpr auto begin() const noexcept { return &data[0]; }
     constexpr auto end()   const noexcept { return &data[N]; }
 
     // Printing
-    friend auto operator<< (std::ostream& os, cx_array const& array) -> std::ostream& {
+    friend auto operator<< (std::ostream& os, cx_array const& arr) -> std::ostream& {
         os << "[";
-        for (auto& v : array) {
+        for (auto& v : arr) {
             os << v << ", ";
         }
         os << "\b\b]";
@@ -236,23 +255,28 @@ constexpr auto operator+ (cx_array<T,N> const& a, cx_array<T,M> const& b) -> cx_
 }
 
 
-///TODO: REWRITE
-template <typename T, std::size_t N>
-class cx_string : public cx_array<T,N> {
-public:
 
-    constexpr cx_string (T const* other) : cx_array<T,N>{other} {};
+template <std::size_t N>
+using cx_string = core::extend< cx_array<char,N> >;
 
-    constexpr cx_string (cx_array<T,N>&& temp) : cx_array<T,N>{temp} {};
-    // Printing
-    friend auto operator<< (std::ostream& os, cx_string const& s) -> std::ostream& {
-        for (auto& v : s) {
-            os << v;
-        }
-        return os;
+template <size_t N>
+auto operator<< (std::ostream& os, cx_string<N> const& cxstr) -> std::ostream& {
+    for (auto& v : cxstr) {
+        os << v;
     }
+    return os;
+}
 
-};
+template <size_t N, size_t M>
+constexpr auto operator+ (cx_string<N> const& a, cx_string<M> const& b) -> cx_string<N+M> {
+    return {a, b};
+}
+
+
+template <size_t N>
+constexpr auto cx_str (const char (&cstr) [N]) {
+    return cx_string<N-1>{&cstr[0]};
+}
 
 
 }//namespace core
