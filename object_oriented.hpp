@@ -1,4 +1,4 @@
 #pragma once
 
-#include "OO/inheritance.hpp"
-#include "OO/extension.hpp"
+#include "class/inheritance.hpp"
+#include "class/extension.hpp"

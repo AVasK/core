@@ -1,25 +1,23 @@
 #pragma once
 
-#include "inheritance.hpp"
-
 namespace core {
+namespace mixin {
 
-template <class Base, template<class> class... Mixins>
-using extend = chain<Base, Mixins...>;
-
+/////////////// [ MACRO ] ///////////////
 #define CORE_MIXIN(name, code)          \
 template <class Base>                   \
 struct name : public Base {             \
     using Base::Base;                   \
     code                                \
 }                                       \
-    
+  
 
-namespace mixin {
+/////////////// [ MIXINS ] //////////////
 
 /**
- * @brief provides ultimate Base class to the mixin hierarchy
- *        via typedef `Super`
+ * @brief provides upper-most Base class to the mixin hierarchy
+ *        via typedef `Super` 
+ *        (whereas Base provides only the direct base for each mixin)
  * @remark Should go first in the extension mixin list
  * 
  * @tparam Base 
@@ -29,6 +27,6 @@ struct SuperMixin : public Base {
     using Base::Base;
     using Super = Base;
 };
-}//namespace mixin
 
+}//namespace mixin
 }//namespace core
