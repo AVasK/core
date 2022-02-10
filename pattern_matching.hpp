@@ -3,7 +3,7 @@
 #include <iostream>
 #include <type_traits>
 #include "meta.hpp"
-#include "type_predicates.hpp"
+#include "typesystem/type_predicates.hpp"
 
 namespace core {
 
