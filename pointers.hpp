@@ -38,7 +38,7 @@ namespace detail {
 
 
 
-// view
+///=============[ VIEW ]===============
 template <typename T, typename pointer=std::add_pointer_t<T>>
 class view {
 public:
@@ -62,7 +62,7 @@ protected:
 
 
 
-// By inheriting from view<T> we can pass templated ptr<T> into functions expecting view<T>  
+///=====================[ PTR ]=======================
 template <typename T, class Deleter=std::default_delete<T>>
 class ptr : public view<T, detail::get_pointer_type<Deleter, T>>, private MaybeEmpty<Deleter> {
     using _view = view<T,detail::get_pointer_type<Deleter, T>>;
@@ -77,7 +77,7 @@ public:
         "the specified deleter type cannot be an rvalue reference");
     
 
-    /// Constructors:
+    //============[ Constructors ]=============
     // (1)
     template <class D = Deleter, typename= std::enable_if_t<
         Type<D>(is_default_constructible && !is_pointer)
@@ -98,7 +98,7 @@ public:
     explicit constexpr ptr (pointer __p) noexcept : _view{__p} , MaybeEmpty<Deleter>{Deleter()} {}
 
 
-    // (3.)
+    // (3)
     template <
         class D = Deleter, 
         typename= std::enable_if_t<
@@ -119,40 +119,106 @@ public:
     : _view{__p}, MaybeEmpty<Deleter>{std::move(__d)} {}
 
     // (4.b)
-    template <
-        class D = Deleter,
-        class RawD = std::remove_reference_t<D>
-    >
+    template <class D = Deleter, class RawD = std::remove_reference_t<D> >
     constexpr ptr (pointer, std::enable_if_t<Type<D>(is_lvalue_reference), RawD&&>) = delete;
 
 
-    /// Copy & Move:
+    //=============[ COPY ]==============
+    /// No copy for non-shared owning pointer
     ptr(ptr const&) = delete;
+    ptr& operator= (ptr const&) = delete;
 
+
+    //=============[ MOVE ]==============
     template <
         class D = Deleter,
         typename= std::enable_if_t<
-            Type<D>(!is_reference && is_move_constructible) || Type<D>(is_reference && is_nothrow_move_constructible)
+            Type<D>(is_move_constructible)
     >>
-    constexpr ptr(ptr&& other) : _view{other.release()}, MaybeEmpty<Deleter>{other} {}
+    constexpr ptr(ptr&& other)
+    : _view{other.release()}
+    , MaybeEmpty<Deleter>{std::forward<deleter_type>(other.get_deleter())} {}
 
-    constexpr ptr& operator= (ptr const&) = delete;
 
-    constexpr ptr& operator= (ptr&& other) { p = other.p; other.p = nullptr; return *this; }
+    template <
+        typename U, 
+        class E,
+        typename=meta::require<
+            Type<typename ptr<U,E>::pointer>( is_convertible_to< pointer > ) 
+            &&
+            Type< U >( !is_array ) 
+            &&
+            (
+                ( Type<Deleter>(is_reference) && (Type<Deleter> == Type<E>) ) 
+                ||
+                ( Type<Deleter>(!is_reference) && Type<E>( is_convertible_to<Deleter> ))
+            )
+        >
+    >
+    constexpr ptr(ptr<U,E>&& u) noexcept 
+        : _view{u.release()}, MaybeEmpty<Deleter>{ std::forward<E>(u.get_deleter()) } {}
 
+
+    constexpr ptr& operator= (ptr&& other) noexcept {
+        reset( other.release() );
+        get_deleter() = std::forward<Deleter>( other.get_deleter() );
+        return *this; 
+    }
+
+
+    template <
+        typename U, 
+        class E,
+        typename=meta::require<
+            Type<U>( !is_array ) && 
+            Type<typename ptr<U,E>::pointer>(is_convertible_to<pointer>) &&
+            Type<Deleter&>( is_assignable<E&&> )
+        >
+    >
+    constexpr ptr& operator= ( ptr<U,E> && other ) noexcept {
+        reset( other.release() );
+        get_deleter() = std::forward<Deleter>( other.get_deleter() );
+        return *this; 
+    } 
+
+    constexpr ptr& operator= (std::nullptr_t) noexcept { reset(); return *this; }
+
+
+    //! TODO: Look at the codegen for reset() vs the other one
     CORE_CONSTEXPR_DESTRUCTOR
-    ~ptr() noexcept { if (p) MaybeEmpty<Deleter>::get()(p); }
-    
+    ~ptr() noexcept { reset(); } 
+        // if (p != nullptr){ get_deleter()(std::move(p)); }
+    // }
+
+
     explicit operator bool() const noexcept { return p != nullptr; }
 
+
     detail::add_ref<T> operator* () const noexcept { return _view::operator*(); }
+
+
     pointer operator->() const noexcept { return _view::operator->(); }
 
+
     constexpr auto unsafe_raw_ptr() const noexcept -> pointer { return p; }
+
+
     constexpr auto release() noexcept -> pointer { pointer tmp = p; p = nullptr; return tmp; }
-    constexpr auto get_deleter() noexcept -> deleter_type& { return *this; }
-    constexpr auto get_deleter() const noexcept -> deleter_type const& { return *this; }
-    constexpr auto view() const noexcept -> _view { return *this; }
+
+
+    constexpr auto get_deleter() noexcept -> deleter_type& { return MaybeEmpty<Deleter>::get(); }
+
+
+    constexpr auto get_deleter() const noexcept -> deleter_type const& { return MaybeEmpty<Deleter>::get(); }
+
+
+    constexpr auto get() const noexcept -> _view { return *this; }
+
+
+    constexpr void reset(pointer other=pointer()) noexcept {
+        if (p != nullptr){ get_deleter()(std::move(p)); }
+        p = other;
+    }
 
     template <class OtherDeleter>
     constexpr auto with_deleter(OtherDeleter const& del=OtherDeleter()) && -> ptr<T, OtherDeleter> {
@@ -161,14 +227,13 @@ public:
         return res;
     }
 
-    template <class TBase, class BaseDel, std::enable_if_t<
-        Type<TBase>(is_base_of<T>) &&
-        Type<BaseDel>(is_convertible_from<Deleter>)
-    >* = nullptr>
-    constexpr operator ptr<TBase, BaseDel>() noexcept {
-        return ptr<TBase,BaseDel>(p);
-    }
-
+    // template <class TBase, class BaseDel, std::enable_if_t<
+    //     Type<TBase>(is_base_of<T>) &&
+    //     Type<BaseDel>(is_convertible_from<Deleter>)
+    // >* = nullptr>
+    // constexpr operator ptr<TBase, BaseDel>() noexcept {
+    //     return ptr<TBase,BaseDel>(p);
+    // }
 };
 
 
