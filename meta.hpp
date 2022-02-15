@@ -7,32 +7,49 @@
 
 namespace meta {
 
+//===========[ REQUIRE ]==========
 template <bool Cond>
 using require = typename std::enable_if<Cond>::type;
 
 
+//===========[ VALID : akin to void_t ]===========
+struct valid {};
+
+namespace detail {
+    template <typename...>
+    struct is_valid {
+        using type = valid;
+    };
+}
+
+template <typename... Args> 
+using is_valid = typename detail::is_valid<Args...>::type;
+
+
+//==========[ BASIC META TYPES ]========
 template <typename T>
 struct identity {
     using type = T;
 };
+
+struct nothing {};
+
+
+template <size_t N>
+struct number {
+    enum{ value = N };
+};
+
+
+template <size_t N>
+struct tag : std::integral_constant<size_t, N> {};
+
 
 template <class Base>
 struct inherit_from : Base {
     using base = Base;
 };
 
-template <typename T>
-struct type_is : identity<T> {};
-
-
-template <typename T, typename... Ts>
-struct first : identity<T> {};
-
-template <typename... Ts>
-using valid = typename first<void, Ts...>::type;
-
-
-struct nothing {};
 
 template <typename _, bool flag>
 struct dependent_flag {
@@ -54,10 +71,11 @@ template <typename T>
 struct always_true : std::true_type {};
 
 
-// ===== typelist =====
+// =====[ typelist ]=====
 template <typename... Ts>
 struct typelist;// {}; // We don't even need to actually define it :)
 
+// =====[ HEAD & TAIL (from type packs) ]=====
 namespace detail {
 
     template <typename... Ts>
@@ -88,8 +106,14 @@ namespace detail {
     };
 }
 
+template <typename... Ts>
+using head = typename detail::head_impl<Ts...>::type;
 
-// ===== rename =====
+template <typename... Ts>
+using tail = typename detail::tail_impl<Ts...>::type;
+
+
+// =====[ rename ]=====
 namespace detail {
     template <class From, template<typename...> class To>
     struct rename_impl;
@@ -107,14 +131,7 @@ template <class From, template<typename...> class To>
 using rename = typename detail::rename_impl<From, To>::type;
 
 
-template <typename... Ts>
-using head = typename detail::head_impl<Ts...>::type;
-
-template <typename... Ts>
-using tail = typename detail::tail_impl<Ts...>::type;
-
-
-// ===== select =====
+// =====[ select ]=====
 namespace detail {
     template <bool Condition, class ThenType, class ElseType>
     struct select_impl {
@@ -134,7 +151,7 @@ template <class Cond, typename T, typename E>
 using select_if = typename detail::select_impl<bool(Cond::value), T,E>::type;
 
 
-// ===== defer =====
+// =====[ defer ]=====
 namespace detail {
     template <metafunc F, typename... Args>
     struct defer_impl {
@@ -147,7 +164,7 @@ template <metafunc F, typename... Args>
 using defer = detail::defer_impl<F, Args...>;
 
 
-// ===== type_at =====
+// =====[ type_at ]=====
 namespace detail {
     ///TODO: Implement a non-naive solution for compilers other than Clang
     template <size_t Index, typename... Ts>
@@ -190,19 +207,19 @@ namespace detail {
 template <class L, size_t Index>
 using list_at = typename detail::list_at_impl<L, Index>::type;
 
-// ===== quote =====
+// =====[ quote ]=====
 template <metafunc F>
 struct quote {
     template <typename... Args>
     using fn = F<Args...>;
 };
 
-// ===== invoke =====
+// =====[ invoke ]=====
 template <class Q, typename... Args>
 using invoke = typename Q::template fn<Args...>;
 
 
-// ===== bind =====
+// =====[ bind ]=====
 template <metafunc F, typename... Ts>
 struct bind_first {
     template <typename... Us>
@@ -216,18 +233,7 @@ template <metafunc F, typename T>
 using bind = bind_first<F,T>;
 
 
-
-template <size_t N>
-struct number {
-    enum{ value = N };
-};
-
-
-template <size_t N>
-struct tag : std::integral_constant<size_t, N> {};
-
-
-// prepend
+// =====[ prepend ]=====
 namespace detail {
     template <class List, typename... T>
     struct prepend_impl;
@@ -245,7 +251,7 @@ template <class List, typename... T>
 using prepend = typename detail::prepend_impl<List,T...>::type;
 
 
-// append
+// =====[ append ]=====
 namespace detail {
     template <class List, typename... T>
     struct append_impl;
@@ -263,7 +269,7 @@ template <class List, typename... T>
 using append = typename detail::append_impl<List,T...>::type;
 
 
-// map
+// =====[ map ]=====
 namespace detail {
     template <metafunc F, class T>
     struct apply_impl {
@@ -280,7 +286,7 @@ template <metafunc F, class List>
 using apply = typename detail::apply_impl<F, List>::type;
 
 
-// filter_p (filter with predicate)
+// =====[ filter_p (filter with predicate) ]=====
 namespace detail {
     template <class List, class Predicate>
     struct filter_p_impl;
@@ -304,7 +310,7 @@ template<class List, class Predicate>
 using filter_p = typename detail::filter_p_impl<List, Predicate>::type;
 
 
-//transform
+// =====[ transform ]=====
 namespace detail {
     template <metafunc F, class List>
     struct transform_impl;
@@ -320,7 +326,7 @@ using transform = typename detail::transform_impl<F,List>::type;
 
 
 
-// apply_transforms
+// =====[ apply_transforms ]=====
 namespace detail {
     template <class Args, metafunc... Fs>
     struct apply_transforms_impl;
@@ -339,7 +345,7 @@ using apply_transforms = typename detail::apply_transforms_impl<Args,Fs...>::typ
 
 
 
-// take 
+// =====[ take ]=====
 namespace detail {
     template <class List, size_t N, class Result>
     struct take_impl;
@@ -373,7 +379,7 @@ namespace detail {
 template <size_t N, typename List, metafunc Res=typelist>
 using take = typename detail::take_impl<List, N, Res<>>::type;
 
-// drop 
+// =====[ drop ]=====
 namespace detail {
     template <class List, size_t N>
     struct drop_impl;
@@ -402,7 +408,7 @@ template <size_t N, typename List>
 using drop = typename detail::drop_impl<List, N>::type;
 
 
-// zip
+// =====[ zip ]=====
 namespace detail {
     template <class List1, class List2>
     struct zip_impl;
@@ -417,7 +423,7 @@ template <class List1, class List2>
 using zip = typename detail::zip_impl<List1, List2>::type;
 
 
-// zip_with
+// =====[ zip_with ]=====
 namespace detail {
     template <class List1, class List2, metafunc F>
     struct zip_with_impl;
@@ -432,7 +438,7 @@ template <class List1, class List2, metafunc F>
 using zip_with = typename detail::zip_with_impl<List1, List2, F>::type;
 
 
-// concat
+// =====[ concat ]=====
 namespace detail {
     template <class... Lists>
     struct concat_impl;
@@ -461,7 +467,7 @@ template <class... Lists>
 using concat = typename detail::concat_impl<Lists...>::type;
 
 
-//repeat
+// =====[ repeat ]=====
 namespace detail {
     template <size_t N, typename... Ts>
     struct repeat_impl {
@@ -486,7 +492,7 @@ using repeat = typename detail::repeat_impl<N,Ts...>::type;
 
 
 
-// set_contains
+// =====[ set_contains ]=====
 namespace detail {
     template <class List, class Value>
     struct set_contains_impl;
@@ -506,7 +512,7 @@ template <class List, class Value>
 using set_contains = typename detail::set_contains_impl<List, Value>::type;
 
 
-// make_set
+// =====[ make_set ]=====
 namespace detail {
 
     template <class List, class Set>
@@ -543,7 +549,7 @@ template <class List, metafunc Set=typelist>
 using make_set = typename detail::make_set_impl< List, Set<> >::type;
 
 
-// contains
+// =====[ contains ]=====
 namespace detail {
     template <class List, typename X>
     struct contains_impl;
@@ -562,7 +568,7 @@ template <class List, typename X>
 using contains = detail::contains_impl<List, X>;
 
 
-// sum
+// =====[ sum ]=====
 constexpr size_t sum() noexcept { return 0; }
 
 template <typename T, typename... Ts>
@@ -583,6 +589,7 @@ constexpr size_t sum(T v, Ts... vs) noexcept {
 //     return true;
 // }
 
+// =====[ ALL ]=====
 constexpr bool all(std::initializer_list<bool> vs) noexcept {
     for (auto&& flag : vs) {
         if (!flag) { return false; }
@@ -613,7 +620,7 @@ constexpr bool all() noexcept {
 }
 
 
-// ANY
+// =====[ ANY ]=====
 template <bool... Vs>
 constexpr bool any() noexcept {
     constexpr bool flag[] = {Vs...};

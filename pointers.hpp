@@ -49,7 +49,8 @@ public:
     detail::add_ref<T> operator* () const noexcept { return *p; }
     pointer operator->() const noexcept { return p; }
 
-    constexpr auto get() -> pointer { return p; }
+    /// <!> unsafe operation, leaking raw pointer may result in memory leaks or double-free
+    constexpr auto get_raw() -> pointer { return p; }
 
     template <class TBase, std::enable_if_t< Type<TBase>(is_base_of<T>) >* = nullptr>
     constexpr operator view<TBase>() noexcept {
@@ -64,7 +65,9 @@ protected:
 
 ///=====================[ PTR ]=======================
 template <typename T, class Deleter=std::default_delete<T>>
-class ptr : public view<T, detail::get_pointer_type<Deleter, T>>, private MaybeEmpty<Deleter> {
+class ptr : public view<T, detail::get_pointer_type<Deleter, T>>
+          , private MaybeEmpty<Deleter> 
+{
     using _view = view<T,detail::get_pointer_type<Deleter, T>>;
     using _view::p;
 public:
