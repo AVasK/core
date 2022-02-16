@@ -51,11 +51,12 @@ struct TypeList {
     constexpr auto decay() const noexcept -> TypeList<typename std::decay<Ts>::type...> { return {}; }
     constexpr auto raw() const noexcept -> TypeList<typename std::remove_reference<typename std::remove_cv<Ts>::type>::type...> { return {}; }
 
-    // sizes, alignments of types
+    // sizes of types
     constexpr auto sizes() const noexcept -> cx_array<size_t, sizeof...(Ts)> {
         return {sizeof(Ts)...};
     }
 
+    // alignments of types
     constexpr auto alignments() const noexcept -> cx_array<size_t, sizeof...(Ts)> {
         return {alignof(Ts)...};
     }
@@ -64,6 +65,8 @@ struct TypeList {
     template <size_t Index>
     constexpr auto at() const noexcept -> TypeOf<meta::type_at<Index, Ts...>> { return {}; }
 
+    // TypeList size = sizeof...(Ts)
+    constexpr auto size() const noexcept -> size_t { return sizeof...(Ts); }
 
     // transformations on types
     template <template <typename...> class NewType, typename... Args>
