@@ -218,6 +218,20 @@ namespace detail {
 }// namespace detail
 
 namespace pattern_matching {
+
+    template <typename T>
+    struct convert_impl {
+        using type = TypeList<T>;
+    };
+
+    template <template <typename...> class L, typename... Ts>
+    struct convert_impl<L<Ts...>> {
+        using type = TypeList<Ts...>;
+    };
+
+    template <typename T>
+    using convert = typename convert_impl<T>::type;
+
         
     template <typename T, class Pattern>
     using match = detail::match<T,Pattern>;
@@ -228,10 +242,13 @@ namespace pattern_matching {
         using this_pattern = detail::match<P,P>;
 
         template <typename T>
-        constexpr bool matches() { return match<T,P>::value; }
+        constexpr bool matches() const noexcept { return match<T,P>::value; }
+
+        template <typename X>
+        constexpr auto unpack() const noexcept { return convert< typename match<X,P>::type >{}; }
 
         template <typename T>
-        constexpr bool eval() { return matches<T>(); }
+        constexpr bool eval() const noexcept { return matches<T>(); }
 
         template <typename T>
         using fn = typename match<T,P>::type;
@@ -273,5 +290,6 @@ namespace pattern_matching {
 }
 
 using pattern_matching::pattern;
+namespace ptrn = pattern_matching;
 
 } // namespace core
