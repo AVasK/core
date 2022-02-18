@@ -324,6 +324,19 @@ namespace detail {
 template <metafunc F, class List>
 using transform = typename detail::transform_impl<F,List>::type;
 
+// =====[ transform_q (Quoted) ]=====
+namespace detail {
+    template <class Q, class List>
+    struct transform_q_impl;
+
+    template <class Q, metafunc List, typename... Ts>
+    struct transform_q_impl< Q, List<Ts...> >{
+        using type = List< invoke<Q, Ts...> >;
+    };
+}
+template <class Q, class List>
+using transform_q = typename detail::transform_q_impl<Q, List>::type;
+
 
 
 // =====[ apply_transforms ]=====
