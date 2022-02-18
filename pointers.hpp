@@ -3,9 +3,10 @@
 #include <type_traits>
 
 #include "typesystem.hpp"
-#include "macros.hpp"
-#include "maybe_empty.hpp"
 #include "pattern_matching.hpp"
+#include "macros.hpp"
+#include "maybe_empty.hpp" // EBCO for Deleter/Allocator
+#include "hash.hpp" // hashable<>
 
 namespace core {
 
@@ -203,7 +204,7 @@ public:
     pointer operator->() const noexcept { return _view::operator->(); }
 
 
-    constexpr auto unsafe_raw_ptr() const noexcept -> pointer { return p; }
+    constexpr auto get_raw() const noexcept -> pointer { return p; }
 
 
     constexpr auto release() noexcept -> pointer { pointer tmp = p; p = nullptr; return tmp; }
@@ -230,14 +231,23 @@ public:
         return res;
     }
 
-    // template <class TBase, class BaseDel, std::enable_if_t<
-    //     Type<TBase>(is_base_of<T>) &&
-    //     Type<BaseDel>(is_convertible_from<Deleter>)
-    // >* = nullptr>
-    // constexpr operator ptr<TBase, BaseDel>() noexcept {
-    //     return ptr<TBase,BaseDel>(p);
-    // }
 };
+
+
+//===========[ hash for ptr ]============
+template <class P, typename RawPointer = typename P::pointer,
+    bool = hashable<RawPointer>::value
+>
+struct ptr_hash : private hashable<RawPointer> {
+    size_t operator() (P const& p) const 
+    noexcept(noexcept( std::declval<std::hash<RawPointer>>()(std::declval<RawPointer>()) ))
+    { return std::hash<RawPointer>{}( p.get_raw() ); }
+};
+
+// Specialization is disabled if the hash is not defined for RawPointer
+template <class P, typename RawPointer>
+struct ptr_hash<P, RawPointer, false>  : private hashable<RawPointer> {};
+
 
 
 template <typename T, class Alloc>
@@ -281,4 +291,10 @@ struct alloc_with<T,std::allocator<T>> : private MaybeEmpty<std::allocator<T>> {
 template <typename T, class Alloc=std::allocator<T>> 
 static auto alloc = alloc_with<T,Alloc>();
 
-}
+}// namespace core;
+
+
+namespace std {
+    template <typename T, class Del>
+    struct hash<core::ptr<T,Del>> : core::ptr_hash<core::ptr<T,Del>> {};
+} // namespace std
