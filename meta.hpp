@@ -13,12 +13,12 @@ using require = typename std::enable_if<Cond>::type;
 
 
 //===========[ VALID : akin to void_t ]===========
-struct valid {};
+struct check_valid {};
 
 namespace detail {
     template <typename...>
     struct is_valid {
-        using type = valid;
+        using type = check_valid;
     };
 }
 

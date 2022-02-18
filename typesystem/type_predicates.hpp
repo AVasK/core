@@ -302,5 +302,10 @@ CORE_CPP17_INLINE_VARIABLE constexpr auto is_convertible_to = bind_predicate<std
 template <class To>
 CORE_CPP17_INLINE_VARIABLE constexpr auto is_convertible_from = rbind_predicate<std::is_convertible, To>();
 
+//==========[ COMPOSITE PREDICATES ]==========
+// CORE_CPP17_INLINE_VARIABLE constexpr auto satisfies_hash_requirements = is_copy_constructible && is_move_constructible && 
+//CORE_CPP17_INLINE_VARIABLE constexpr auto is_hashable = 
+
+
 } //namespace typesystem
 } //namespace core
