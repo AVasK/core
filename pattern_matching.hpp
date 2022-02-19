@@ -57,7 +57,7 @@ namespace detail {
         match_result<T, true>,
         match_result<T, false> 
     > {
-        template <typename X> using pass = meta::select< 
+        template <typename...> using pass = meta::select< 
             std::is_same<T,Pattern>::value,
             T,
             meta::error
@@ -67,7 +67,7 @@ namespace detail {
 
     template <typename T>
     struct match<T, _> : match_result<T, true> {
-        template <typename X> using pass = X;
+        template <typename... Xs> using pass = meta::head<Xs...>;
     };
 
     template <typename... Ts>
@@ -98,37 +98,37 @@ namespace detail {
 
     template <typename T, typename P>
     struct match <const T, const P> : match<T,P> {
-        template <typename X> using pass = typename ptrn<P>::template pass<X> const;
+        template <typename... Xs> using pass = typename ptrn<P>::template pass<Xs...> const;
     };
 
     template <typename T, typename P>
     struct match <T*, P*> : match<T,P> {
-        template <typename X> using pass = typename ptrn<P>::template pass<X> *;
+        template <typename... Xs> using pass = typename ptrn<P>::template pass<Xs...> *;
     };
 
     template <typename T, typename P>
     struct match <T&, P&> : match<T,P> {
-        template <typename X> using pass = typename ptrn<P>::template pass<X> &;
+        template <typename... Xs> using pass = typename ptrn<P>::template pass<Xs...> &;
     };
 
     template <typename T, typename P>
     struct match <T[], P[]> : match<T,P> {
-        template <typename X> using pass = typename ptrn<P>::template pass<X> [];
+        template <typename... Xs> using pass = typename ptrn<P>::template pass<Xs...> [];
     };
 
     template <typename T, typename P>
     struct match <const T[], const P[]> : match<T,P> {
-        template <typename X> using pass = const typename ptrn<P>::template pass<X> [];
+        template <typename... Xs> using pass = const typename ptrn<P>::template pass<Xs...> [];
     };
 
     template <typename T, typename P, size_t N>
     struct match <T[N], P[N]> : match<T,P> {
-        template <typename X> using pass = typename ptrn<P>::template pass<X> [N];
+        template <typename... Xs> using pass = typename ptrn<P>::template pass<Xs...> [N];
     };
 
     template <typename T, typename P, size_t N>
     struct match <const T[N], const P[N]> : match<T,P> {
-        template <typename X> using pass = const typename ptrn<P>::template pass<X> [N];
+        template <typename... Xs> using pass = const typename ptrn<P>::template pass<Xs...> [N];
     };
 
 
@@ -150,8 +150,8 @@ namespace detail {
             using type = typename ptrn<PR>::template pass<R> (typename ptrn<Ps>::template pass<Xs>...); 
         };
 
-        template <typename X>
-        using pass = typename pass_impl<X>::type;
+        template <typename... Xs>
+        using pass = typename pass_impl<func_match<Xs...>>::type;
     };
 
 
@@ -167,7 +167,7 @@ namespace detail {
             static constexpr bool value = false;
             using type = meta::error;
 
-            template <typename X>
+            template <typename... Xs>
             using pass = meta::error;
         };
 
@@ -185,7 +185,7 @@ namespace detail {
             using type = matched_types< typename match<Ts,Ps>::type ... >;
 
             template <typename... Xs>
-            using pass = meta::typelist< typename ptrn<Ps>::template pass<Xs>... >;
+            using pass = meta::typelist< typename ptrn<Ps>::template pass<Xs>... >; 
         };
 
         // else, if Patterns list ends with ___ [variadic wildcard]
@@ -195,11 +195,23 @@ namespace detail {
             (sizeof...(Types) >= sizeof...(Patterns)-1) &&
             std::is_same<remove_cvref_t<meta::type_at<sizeof...(Patterns)-1, Patterns...>>, ___>::value 
         >> {
-            static constexpr auto N_Ps = sizeof...(Patterns);
+            // nested structure:
+            // static constexpr int N_Ps = sizeof...(Patterns);
+            // using list = meta::zip_with< 
+            //     meta::take<N_Ps, meta::append<meta::take<N_Ps-1, matched_types<Types...>>, meta::drop<N_Ps-1, variadic<Types...>> >>,
+            //     meta::typelist<Patterns...>,
+            //     match
+            // >;
 
+            // linear structure:
+            static constexpr auto N_Ps = sizeof...(Patterns) - 1; // the pack ___ is not counted as a pattern
+            static constexpr auto N_Ts = sizeof...(Types);
+            static constexpr auto N = std::min({N_Ts, N_Ps});
+            static constexpr auto N_add = (N_Ts - N_Ps) > 0 ? (N_Ts - N_Ps) : 0;
+            using patterns_unpacked = meta::concat< meta::take<N_Ps, meta::typelist<Patterns...>>, meta::repeat<N_add, _> >;
             using list = meta::zip_with< 
-                meta::take<N_Ps, meta::append<meta::take<N_Ps-1, matched_types<Types...>>, meta::drop<N_Ps-1, variadic<Types...>> >>,
-                meta::typelist<Patterns...>,
+                meta::typelist<Types...>,
+                meta::concat<meta::take<N_Ps, meta::typelist<Patterns...>>, meta::repeat<N_add, _> >,
                 match
             >;
 
@@ -213,6 +225,52 @@ namespace detail {
 
         static constexpr bool value = choose<C<Ts...>, C<Ps...>>::value;
         using type = typename choose<C<Ts...>, C<Ps...>>::type;
+        
+        
+        template <class _Ps, class Xs>
+        struct _pass_wildcard;
+
+        template <typename... _Ps, typename... Xs>
+        struct _pass_wildcard<meta::typelist<_Ps...>, meta::typelist<Xs...>> {
+            using type = meta::typelist< typename ptrn<_Ps>::template pass<Xs>... >; 
+        };
+
+        template <class _Ps, class Xs>
+        struct _pass_variadic;
+
+        template <typename... _Ps, typename... Xs>
+        struct _pass_variadic<meta::typelist<_Ps...>, meta::typelist<Xs...>> {
+            using pass_first = typename ptrn<meta::head<_Ps...>>::template pass< meta::head<Xs...> >;
+            using Ps_tail = meta::apply<C, meta::tail<_Ps...>>;
+            using pass_rest = meta::apply< ptrn<Ps_tail>::template pass, meta::tail<Xs...> >;
+            using type = meta::prepend< pass_rest, pass_first >;
+        }; 
+
+        template <>
+        struct _pass_variadic<meta::typelist<>, meta::typelist<>> {
+            using type = meta::typelist<>;
+        };
+
+
+        template <class _Ps, class Xs>
+        struct _pass_selector {
+            using type = typename meta::select< 
+                ( meta::contains<meta::transform<remove_cvref_t, _Ps>, ___>::value ),
+                meta::select< // (variadic)
+                    ( meta::size<Xs> >= meta::size<_Ps>-1 ),
+                    _pass_variadic<_Ps, Xs>,
+                    meta::wrap< meta::error >
+                >,
+                meta::select< // (wildcard)
+                    (meta::size<_Ps> == meta::size<Xs>),
+                    _pass_wildcard<_Ps, Xs>,
+                    meta::wrap< meta::error >
+                >  
+            >::type;
+        };
+
+        template <typename... Xs>
+        using pass = typename _pass_selector<meta::typelist<Ps...>, meta::typelist<Xs...>>::type;
     };
 
 }// namespace detail
@@ -247,14 +305,21 @@ namespace pattern_matching {
         template <typename X>
         constexpr auto unpack() const noexcept { return convert< typename match<X,P>::type >{}; }
 
+
+        struct unpack_t {
+            template <typename X>
+            using fn = typename match<X,P>::type;
+        };
+
+
         template <typename T>
         constexpr bool eval() const noexcept { return matches<T>(); }
 
         template <typename T>
         using fn = typename match<T,P>::type;
 
-        template <typename T>
-        using substitute = typename detail::match<P,P>::template pass<T>;
+        template <typename... Ts>
+        using pass = typename this_pattern::template pass<Ts...>;
     };
 
     template <class P>
@@ -264,12 +329,17 @@ namespace pattern_matching {
     struct ConversionPattern : detail::TypeCase {
         template <typename T>
         constexpr static bool test() {
-            return From{}.template matches<T>();
+            return From{}.template matches<T>() ;//&& 
+                //    (From{}.template unpack<T>().size() ==
+                    // To{}.template unpack< typename To::token >().size());
+                    // convert<typename To::template substitute< meta::invoke<From, T> >>{}.size() );
                 //    To{}.template matches< meta::invoke<From,T> >();
         }
 
         template <typename T>
-        using fn = typename To::template substitute< meta::invoke<From,T> >;
+        using fn = meta::apply< To::template pass, meta::invoke<From,T> >;
+        // using fn = typename To::template substitute< decltype(From{}.template unpack<T>()) >;
+
     };
 
 
