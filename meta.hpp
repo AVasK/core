@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <initializer_list>
+#include "macros.hpp"
 
 #define metafunc template<class...> class
 
@@ -112,6 +113,18 @@ using head = typename detail::head_impl<Ts...>::type;
 template <typename... Ts>
 using tail = typename detail::tail_impl<Ts...>::type;
 
+//=====[ list_size ]=====
+template <class List>
+struct list_size;
+
+template <template<typename...> class List, typename... Ts>
+struct list_size< List<Ts...> > {
+    static constexpr size_t value = sizeof...(Ts);
+};
+
+template <class List>
+CORE_CPP17_INLINE_VARIABLE constexpr size_t size = list_size<List>::value;
+
 
 // =====[ rename ]=====
 namespace detail {
@@ -163,6 +176,9 @@ namespace detail {
 template <metafunc F, typename... Args>
 using defer = detail::defer_impl<F, Args...>;
 
+// =====[ wrap ]=====
+template <typename T>
+using wrap = identity<T>;
 
 // =====[ type_at ]=====
 namespace detail {
