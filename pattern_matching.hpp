@@ -282,8 +282,8 @@ namespace pattern_matching {
         using type = TypeList<T>;
     };
 
-    template <template <typename...> class L, typename... Ts>
-    struct convert_impl<L<Ts...>> {
+    template <typename... Ts>
+    struct convert_impl<meta::typelist<Ts...>> {
         using type = TypeList<Ts...>;
     };
 
