@@ -40,10 +40,11 @@ namespace detail {
 
 
 ///=============[ VIEW ]===============
-template <typename T, typename pointer=std::add_pointer_t<T>>
+template <typename T, typename Pointer=std::add_pointer_t<T>>
 class view {
 public:
     using value_type = T;
+    using pointer = Pointer;
 
     constexpr view (pointer __p=nullptr) noexcept : p {__p} {}
 
@@ -51,7 +52,7 @@ public:
     pointer operator->() const noexcept { return p; }
 
     /// <!> unsafe operation, leaking raw pointer may result in memory leaks or double-free
-    constexpr auto get_raw() -> pointer { return p; }
+    constexpr auto get_raw() const noexcept -> pointer { return p; }
 
     template <class TBase, std::enable_if_t< Type<TBase>(is_base_of<T>) >* = nullptr>
     constexpr operator view<TBase>() noexcept {
@@ -235,19 +236,20 @@ public:
 
 
 //===========[ hash for ptr ]============
-template <class P, typename RawPointer = typename P::pointer,
-    bool = hashable<RawPointer>::value
->
-struct ptr_hash : private hashable<RawPointer> {
-    size_t operator() (P const& p) const 
-    noexcept(noexcept( std::declval<std::hash<RawPointer>>()(std::declval<RawPointer>()) ))
-    { return std::hash<RawPointer>{}( p.get_raw() ); }
-};
+namespace detail {
+    template <class P, typename RawPointer = typename P::pointer,
+        bool = hashable<RawPointer>::value
+    >
+    struct ptr_hash : private hashable<RawPointer> {
+        size_t operator() (P const& p) const 
+        noexcept(noexcept( std::declval<std::hash<RawPointer>>()(std::declval<RawPointer>()) ))
+        { return std::hash<RawPointer>{}( p.get_raw() ); }
+    };
 
-// Specialization is disabled if the hash is not defined for RawPointer
-template <class P, typename RawPointer>
-struct ptr_hash<P, RawPointer, false>  : private hashable<RawPointer> {};
-
+    // Specialization is disabled if the hash is not defined for RawPointer
+    template <class P, typename RawPointer>
+    struct ptr_hash<P, RawPointer, false>  : private hashable<RawPointer> {};
+}//namespace detail
 
 
 template <typename T, class Alloc>
@@ -296,5 +298,8 @@ static auto alloc = alloc_with<T,Alloc>();
 
 namespace std {
     template <typename T, class Del>
-    struct hash<core::ptr<T,Del>> : core::ptr_hash<core::ptr<T,Del>> {};
+    struct hash<core::ptr<T,Del>> : core::detail::ptr_hash<core::ptr<T,Del>> {};
+
+    template <typename T, class Pointer>
+    struct hash<core::view<T,Pointer>> : core::detail::ptr_hash<core::view<T,Pointer>> {};
 } // namespace std
