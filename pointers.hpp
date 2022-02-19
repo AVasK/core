@@ -25,12 +25,17 @@ namespace detail {
     template <class Del>
     using Ref = typename decltype(
         Type<Del>.match(
-            pattern< _ const& >  >>  pattern< _ const& >, // if Del is a const&,
-            pattern< _& >        >>  pattern< _& >,       // else, if Del is &
-            pattern< _ >         >>  pattern< _ const& >  // otherwise,
+            // pattern< _ const& >  >>  pattern< _ const& >, // if Del is a const&,
+            // pattern< _& >        >>  pattern< _& >,       // else, if Del is &
+            // pattern< _ >         >>  pattern< _ const& >  // otherwise,
+            is_reference >> Type<Del>,
+            otherwise >> Type<Del const&>
         )
     )::type;
 
+    static_assert( core::Type<Ref<char&>> == core::Type<char&>, "OOPS");
+    static_assert( core::Type<Ref<float const&>> == core::Type<float const&>, "OOPS");
+    static_assert( core::Type<Ref<float>> == core::Type<float const&>, "OOPS");
     // using Test = Ref<int>;
 
     template <typename T>
