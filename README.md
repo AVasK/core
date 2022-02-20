@@ -247,3 +247,54 @@ for (auto i : range(start, end, step)) {...}
 ```C++
 for (auto i : range(..., ..., ...).reverse()) {...}
 ```
+
+
+## core::thread
+
+> #### C++14
+
+An auto-joinable wrapper class for std::thread
+
+
+## core::access
+
+> #### C++14
+
+```C++
+struct A { int x = 7; };
+    core::access<A> a {A()};
+    std::cout << a->x; // OK: access is serialized 
+
+    core::access<int> x {7};
+    std::cout << x.lock(); // OK: Access is serialized here
+    {
+        auto data = x.lock();
+        std::cout << data << "\n";
+    }
+    // OK: data goes out of scope
+
+    std::cout << x.lock(); // deadlock if data *was* still here!
+
+```
+
+A simple (dumb) example of incrementing a counter [it works, tho... unlike plain int :) ]
+```C++
+core::access<int> counter {0};
+core::access<bool> flag {false};
+
+{
+    std::vector< core::thread > threads;
+    using core::range;
+    for (auto i : range(10)) {
+        threads.emplace_back([&]{ 
+            while( !flag.lock() ) { /* spin-wait */ }
+            for (auto i : range(100)){ counter.lock()+=1; } 
+        });
+    }
+
+    *flag.lock() = true;
+}
+
+std::cout << counter.lock() << "\n";
+
+```
