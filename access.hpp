@@ -63,7 +63,7 @@ struct access {
     constexpr RAII_locker<T,Mutex> operator->() const noexcept { return {value, _mutex}; }
     constexpr RAII_locker<T,Mutex> operator->() noexcept { return {value, _mutex}; }
 
-    constexpr Mutex mutex() { return _mutex; }
+    constexpr Mutex& mutex() { return _mutex; }
 
     constexpr locked<T,Mutex> lock() { return {value, _mutex}; }
     
