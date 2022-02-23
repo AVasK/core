@@ -277,7 +277,77 @@ struct A { int x = 7; };
 
 ```
 
-A simple (dumb) example of incrementing a counter [it works, tho... unlike plain int :) ]
+Grabbing the lock on the object and passing it around:
+here, the Locked<> acts as a *gateway* object
+
+>Here, the the Locked<> class was modified to print "Lock" and "Unlock" to show exactly where the locking happens
+
+```C++
+struct A { int x = 7; double y = 2.2; };
+
+void change_a( core::locked<A>&& locked_a ) {
+    // and remember, no lock-guard
+    locked_a->x += 1;
+    locked_a->y = 3.14;
+    // the gateway object (here, `locked_a`) will unlock() the mutex when going out of scope
+}
+
+int main() {
+    core::access<A> a {A()};
+    
+    // (1) Smallest lock granularity: 
+    //     This way we lock on each `->` access
+    std::cerr << "==========\n";
+    // Lock
+    std::cout << a->x << "\n";
+    // Unlock
+
+    // Lock
+    std::cout << a->y << "\n";
+    // Unlock 
+    std::cerr << "==========\n";
+
+    std::cerr << "\nVS\n";
+    change_a( a.lock() ); // safely changing `a` through the gateway object 
+
+    // (2) Locking the object for the lifetime of the gateway object:
+    {
+        std::cerr << "==========\n";
+        auto gateway = a.lock();
+        // ===== access ======
+        std::cout << gateway->x << "\n";
+        std::cout << gateway->y << "\n";
+    }
+    std::cerr << "==========\n";
+
+```
+
+    output: 
+    ```
+    ==========
+    Lock
+    7
+    Unlock
+    Lock
+    2.2
+    Unlock
+    ==========
+
+    VS
+    Lock
+    ...change...
+    ...auto-unlock...
+    Unlock
+    ==========
+    Lock
+    8
+    3.14
+    Unlock
+    ==========
+    ```
+
+
+A simple (and pretty slow) example of incrementing a counter [it works, tho... unlike plain int :) ]
 ```C++
 core::access<int> counter {0};
 core::access<bool> flag {false};
