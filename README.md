@@ -319,11 +319,10 @@ int main() {
         std::cout << gateway->y << "\n";
     }
     std::cerr << "==========\n";
-
+}
 ```
 
     output: 
-    ```
     ==========
     Lock
     7
@@ -344,7 +343,6 @@ int main() {
     3.14
     Unlock
     ==========
-    ```
 
 
 A simple (and pretty slow) example of incrementing a counter [it works, tho... unlike plain int :) ]
