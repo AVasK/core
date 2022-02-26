@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cerrno>
-#include "ints.hpp"
-#include "endianness.hpp"
+#include "../ints.hpp"
+#include "../endianness.hpp"
 #include "cpuinfo_base.hpp"
 
 // APPLE:
@@ -16,7 +16,7 @@ namespace device {
 using namespace integral;
 
 struct ErrorCode {
-    size_t code;
+    int code;
 };
 
 template <typename T>
@@ -40,13 +40,13 @@ bool test_query(const char * feature, T * ret=nullptr) {
 struct CPU : CPUInfo {
     // Apple perflevel0 = max power cores.
     // On M1 arch. currently 2 types of cores
-    static i32 hardware_concurrency(){ return n_cores(); }
+    static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
     static i32 n_cores(){ return query<i32>("hw.ncpu"); }
     static bool has_hyperthreading(){ return test_query<i32>("hw.cputhreadtype"); }
     static i32 active_cores(){ return query<i32>("hw.activecpu"); }
     static i64 cacheline_size(){ return query<i64>("hw.cachelinesize"); }
     static i64 ram() { return query<i64>("hw.memsize")/(1024*1024*1024); }//in GB
-    static i32 n_core_types() { return query<i32>("hw.nperflevels"); }
+    static i32 n_core_types() { i32 n; bool test = test_query<i32>("hw.nperflevels", &n); return test ? n : 1; }
     static bool has_hybrid_cores() { return n_core_types() > 1; }
     static i32 p_cores() { return query<i32>("hw.perflevel0.physicalcpu"); }
     static i32 e_cores() { return query<i32>("hw.perflevel1.physicalcpu"); }

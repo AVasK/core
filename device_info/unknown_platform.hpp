@@ -2,8 +2,8 @@
 
 #include <thread> 
 
-#include "ints.hpp"
-#include "endianness.hpp"
+#include "../ints.hpp"
+#include "../endianness.hpp"
 #include "cpuinfo_base.hpp"
 
 namespace core {

@@ -6,17 +6,7 @@
 namespace core {
 namespace device {
 
-namespace architecture {
-
-    struct ARM {
-        static bool ext_neon() { return false; }
-        static bool ext_neon_fp16() { return false; }
-        static bool ext_neon_hpfp() { return false; }
-        static bool ext_advSIMD() { return false; }
-        static bool ext_armv8_1_atomics() { return false; }
-    };
-
-}//namespace architecture
+using namespace integral;
 
 struct CPUInfo {
     static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
