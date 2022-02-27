@@ -37,6 +37,11 @@ bool test_query(const char * feature, T * ret=nullptr) {
     return false;
 }
 
+//! From Apple's code:
+//  These are the supported HW selectors for sysctlbyname [...]
+//  Parameters that are byte counts or frequencies are 64 bit numbers.
+//  All other parameters are 32 bit numbers.
+
 struct CPU : CPUInfo {
     // Apple perflevel0 = max power cores.
     // On M1 arch. currently 2 types of cores
