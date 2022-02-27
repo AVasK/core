@@ -5,7 +5,7 @@
 #include "../endianness.hpp"
 #include "cpuinfo_base.hpp"
 
-// APPLE:
+// Sysctl
 #include <sys/param.h>
 #include <sys/sysctl.h>
 
