@@ -366,3 +366,37 @@ core::access<bool> flag {false};
 std::cout << counter.lock() << "\n";
 
 ```
+
+
+## core::device::CPU
+> Used to access the information about CPU (including the p-cores/e-cores counts, cacheline size, e.t.c)
+
+Supported OSes:
+- Apple Mac OS: using sysctl
+- POSIX-compliant OSes: using minimum sysctl subset (ncpus, endianness)
+
+TODO:
+- Add Windows support (including support for Intel's 12th Gen hybrid CPUs)
+- Add Linux support 
+- Add OS-independent fallback using x86 cpuid
+
+
+```C++
+#include <iostream>
+#include "core/cpu.hpp"
+
+int main() {
+    std::cout << "#cpus: " << core::device::CPU::n_cores() << "\n";
+    std::cout << "cacheLineSize: " << core::device::CPU::cacheline_size() << "\n";
+    std::cout << "RAM: " << core::device::CPU::ram() << "GB \n";
+    std::cout << "hybrid cores: " << core::device::CPU::has_hybrid_cores() << "\n";
+
+    if (core::device::CPU::has_hybrid_cores()) {
+        std::cout << "e-cores: " << core::device::CPU::e_cores() << "\n";
+        std::cout << "p-cores: " << core::device::CPU::p_cores() << "\n";
+    }
+
+    std::cout << std::boolalpha;
+    std::cout << "neon: " << core::device::CPU::ext_neon() << "\n";
+}
+```
