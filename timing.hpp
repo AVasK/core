@@ -73,11 +73,12 @@ using timer_ns = timer<std::chrono::nanoseconds>;
 
 template <
     class Units = std::chrono::milliseconds,
-    class F,
-    typename... Args,
-    class Clock = std::chrono::high_resolution_clock
+    typename F,
+    typename... Args
 >
 auto timeit(F && f, Args&&... args) {
+    using Clock = std::chrono::high_resolution_clock;
+    
     auto start_time = Clock::now();
     std::forward<F>(f)( std::forward<Args>(args)... );
     auto end_time = Clock::now();
