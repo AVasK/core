@@ -76,9 +76,9 @@ template <
     typename F,
     typename... Args
 >
-auto timeit(F && f, Args&&... args) {
+inline auto timeit(F && f, Args&&... args) {
     using Clock = std::chrono::high_resolution_clock;
-    
+
     auto start_time = Clock::now();
     std::forward<F>(f)( std::forward<Args>(args)... );
     auto end_time = Clock::now();
