@@ -64,15 +64,33 @@ namespace detail {
 using ms = std::chrono::milliseconds;
 using ns = std::chrono::nanoseconds;
 
-template <typename Units = std::chrono::milliseconds>
+template <typename Units = std::chrono::nanoseconds>
 using timer = detail::Timer<std::chrono::high_resolution_clock, Units>;
 
 using timer_ms = timer<std::chrono::milliseconds>;
 using timer_ns = timer<std::chrono::nanoseconds>;
 
 
+template <class TimePoint, class DefaultUnits> 
+class Duration : public TimePoint {
+public:
+    constexpr Duration( TimePoint const& d ) : diff{ d } {}
+
+    template <class Units>
+    auto in() const { return std::chrono::duration_cast<Units>(diff).count(); }
+
+    operator typename DefaultUnits::duration::rep() const {
+        return std::chrono::duration_cast<DefaultUnits>(diff).count();
+    }
+
+    auto to_ms() const { return this->in<ms>(); }
+    auto to_ns() const { return this->in<ns>(); }
+private:
+    TimePoint diff;
+};
+
 template <
-    class Units = std::chrono::milliseconds,
+    class Units = std::chrono::nanoseconds,
     typename F,
     typename... Args
 >
@@ -82,7 +100,8 @@ inline auto timeit(F && f, Args&&... args) {
     auto start_time = Clock::now();
     std::forward<F>(f)( std::forward<Args>(args)... );
     auto end_time = Clock::now();
-    auto elapsed = std::chrono::duration_cast<Units>(end_time - start_time).count();
+    // auto elapsed = std::chrono::duration_cast<Units>(end_time - start_time).count();
+    auto elapsed = Duration<decltype(end_time-start_time), Units>( end_time - start_time );
     return elapsed;
 }
 
