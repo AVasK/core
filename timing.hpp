@@ -72,7 +72,7 @@ using timer_ns = timer<std::chrono::nanoseconds>;
 
 
 template <class TimePoint, class DefaultUnits> 
-class Duration : public TimePoint {
+class Duration {
 public:
     constexpr Duration( TimePoint const& d ) : diff{ d } {}
 
@@ -83,11 +83,16 @@ public:
         return std::chrono::duration_cast<DefaultUnits>(diff).count();
     }
 
-    auto to_ms() const { return this->in<ms>(); }
-    auto to_ns() const { return this->in<ns>(); }
 private:
     TimePoint diff;
 };
+
+
+template <class DefaultUnits, class TimePoint> 
+auto duration(TimePoint diff) -> Duration<TimePoint, DefaultUnits> {
+    return {diff};
+}
+
 
 template <
     class Units = std::chrono::nanoseconds,
@@ -100,9 +105,7 @@ inline auto timeit(F && f, Args&&... args) {
     auto start_time = Clock::now();
     std::forward<F>(f)( std::forward<Args>(args)... );
     auto end_time = Clock::now();
-    // auto elapsed = std::chrono::duration_cast<Units>(end_time - start_time).count();
-    auto elapsed = Duration<decltype(end_time-start_time), Units>( end_time - start_time );
-    return elapsed;
+    return duration<Units>( end_time - start_time );
 }
 
 }; // namespace timing
