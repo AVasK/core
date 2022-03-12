@@ -22,8 +22,7 @@ struct RAII_locker {
 
     constexpr T const* operator->() const noexcept { return &ref; }
     constexpr T* operator->() noexcept { return &ref; }
-    constexpr T& operator*() noexcept { return ref; } 
-    operator T& () noexcept { return ref; }
+
     ~RAII_locker(){ m.unlock(); }
 private:
     T & ref;
@@ -31,28 +30,33 @@ private:
 };
 
 
-// Move-enabled RAII locking class (potential overhead: uses pointer vs reference and checks it in d-tor)
+// Move-enabled RAII locking class (similar to unique_ptr)
 template <typename T, class Mutex=std::mutex>
 struct locked {
-    constexpr locked(T& obj, Mutex & mut) : ref{ obj }, m{ &mut } { m->lock(); }
-    constexpr locked(T& obj, Mutex & mut, std::adopt_lock_t) : ref{ obj }, m{ &mut } {/*adopting the locked mutex*/}
-    locked( locked&& other ) : ref{ other.ref }, m{ other.m } { other.m = nullptr; };
+    constexpr locked(T& obj, Mutex & mut) : ref{ obj }, m{ &mut }, _owns_lock{true} { m->lock(); }
+    constexpr locked(T& obj, Mutex & mut, std::adopt_lock_t) : ref{ obj }, m{ &mut }, _owns_lock{true} {/*adopting the locked mutex*/}
+    locked( locked&& other ) : ref{ other.ref }, m{ other.m }, _owns_lock{ other._owns_lock } { other.m = nullptr; };
     locked( locked const& ) = delete;
     locked& operator= (locked const& ) = delete;
     locked& operator= (locked && other) { 
         ref = other.ref;  
         m = other.m;
+        _owns_lock = other._owns_lock;
         other.m = nullptr;
     }
 
+    void unlock() { if (m) m->unlock(); _owns_lock = false; }
+
     constexpr T const* operator->() const noexcept { return &ref; }
     constexpr T* operator->() noexcept { return &ref; }
-    constexpr T& operator*() noexcept { return ref; } 
+    // constexpr T& operator*() noexcept { return ref; } 
     operator T& () noexcept { return ref; }
-    ~locked(){ if (m) m->unlock(); }
+
+    ~locked(){ if (m && _owns_lock) { m->unlock(); _owns_lock=false; } }
 private:
     T & ref;
     Mutex * m;
+    bool _owns_lock = false;
 };
 
 
@@ -60,12 +64,13 @@ template <typename T, class Mutex=std::mutex>
 struct access {
     constexpr access (T const& v) : value{v}, _mutex{} {}
 
-    constexpr RAII_locker<T,Mutex> operator->() const noexcept { return {value, _mutex}; }
     constexpr RAII_locker<T,Mutex> operator->() noexcept { return {value, _mutex}; }
 
     constexpr Mutex& mutex() { return _mutex; }
 
     constexpr locked<T,Mutex> lock() { return {value, _mutex}; }
+
+    constexpr RAII_locker<T,Mutex> grab() { return {value, _mutex}; }
     
     #if __cplusplus/100 >= 2017
     std::optional<locked<T,Mutex>> try_lock() { 
