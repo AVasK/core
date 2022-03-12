@@ -3,6 +3,7 @@
 #include <queue>
 #include "../access.hpp"
 
+constexpr size_t cacheline = 128;
 
 template <typename T>
 class SimpleQueue {
@@ -53,11 +54,11 @@ public:
     }
 
     void close() {
-        _closed.store(true);
+        _closed.store(true, std::memory_order_release);
     }
 
     bool closed() const {
-        return _closed.load();
+        return _closed.load(std::memory_order_acquire);
     }
 
     explicit operator bool() { return !closed() || !empty(); }
