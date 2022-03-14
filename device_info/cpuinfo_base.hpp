@@ -1,5 +1,8 @@
 #pragma once
 #include <thread>
+#if __cpp_lib_hardware_interference_size && __cplusplus >= __cpp_lib_hardware_interference_size
+    #include <new> // hardware_destructive_interference_size
+#endif
 #include "../ints.hpp"
 #include "../endianness.hpp"
 
@@ -9,11 +12,22 @@ namespace device {
 using namespace integral;
 
 struct CPUInfo {
+    static constexpr i64 cacheline_size(){ 
+    #if __cpp_lib_hardware_interference_size && __cplusplus >= __cpp_lib_hardware_interference_size
+        return std::hardware_destructive_interference_size();
+    #elif (__x86_64__ || __amd64__)    
+    return 64; 
+    #elif __powerpc__
+    return 128;
+    #else
+    return 64; // A safe assumption if nothing else is known
+    #endif
+    }
+
     static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
     static i32 n_cores(){ return 0; }
     static bool has_hyperthreading(){ return false; }
     static i32 active_cores(){ return 0; }
-    static i64 cacheline_size(){ return 0; }
     static i64 ram() { return 0; }
     static i32 n_core_types() { return 0; }
     static bool has_hybrid_cores() { return false; }

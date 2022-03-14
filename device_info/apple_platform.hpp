@@ -45,11 +45,20 @@ bool test_query(const char * feature, T * ret=nullptr) {
 struct CPU : CPUInfo {
     // Apple perflevel0 = max power cores.
     // On M1 arch. currently 2 types of cores
+    # if !defined __cpp_lib_hardware_interference_size || __cplusplus < __cpp_lib_hardware_interference_size
+    static constexpr i64 cacheline_size(){ 
+    #if defined __aarch64__ 
+        return 128; // M1 
+    #else 
+        return 64; // x86?
+    #endif
+    }//return query<i64>("hw.cachelinesize"); }
+    #endif
+
     static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
     static i32 n_cores(){ return query<i32>("hw.ncpu"); }
     static bool has_hyperthreading(){ return test_query<i32>("hw.cputhreadtype"); }
     static i32 active_cores(){ return query<i32>("hw.activecpu"); }
-    static i64 cacheline_size(){ return query<i64>("hw.cachelinesize"); }
     static i64 ram() { return query<i64>("hw.memsize")/(1024*1024*1024); }//in GB
     static i32 n_core_types() { i32 n; bool test = test_query<i32>("hw.nperflevels", &n); return test ? n : 1; }
     static bool has_hybrid_cores() { return n_core_types() > 1; }
