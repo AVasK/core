@@ -46,14 +46,15 @@ struct CPU : CPUInfo {
     // Apple perflevel0 = max power cores.
     // On M1 arch. currently 2 types of cores
     # if !defined __cpp_lib_hardware_interference_size || __cplusplus < __cpp_lib_hardware_interference_size
-    static constexpr i64 cacheline_size(){ 
-    #if defined __aarch64__ 
-        return 128; // M1 
-    #else 
-        return 64; // x86?
+    static constexpr i64 cacheline_size =
+    #   if defined __aarch64__ 
+            128; // M1 
+    #   else 
+            64; // x86?
+    #   endif
     #endif
-    }//return query<i64>("hw.cachelinesize"); }
-    #endif
+    
+    //return query<i64>("hw.cachelinesize"); }
 
     static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
     static i32 n_cores(){ return query<i32>("hw.ncpu"); }

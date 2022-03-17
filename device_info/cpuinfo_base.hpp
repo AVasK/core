@@ -12,17 +12,16 @@ namespace device {
 using namespace integral;
 
 struct CPUInfo {
-    static constexpr i64 cacheline_size(){ 
+    static constexpr i64 cacheline_size =  
     #if __cpp_lib_hardware_interference_size && __cplusplus >= __cpp_lib_hardware_interference_size
-        return std::hardware_destructive_interference_size();
+        std::hardware_destructive_interference_size();
     #elif (__x86_64__ || __amd64__)    
-    return 64; 
+        64; 
     #elif __powerpc__
-    return 128;
+        128;
     #else
-    return 64; // A safe assumption if nothing else is known
+        64; // A safe assumption if nothing else is known
     #endif
-    }
 
     static i32 hardware_concurrency(){ return std::thread::hardware_concurrency(); }
     static i32 n_cores(){ return 0; }
