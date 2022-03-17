@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace core {
-namespace integral {
+inline namespace integral {
 
 using i8  = int8_t;
 using i16 = int16_t;
