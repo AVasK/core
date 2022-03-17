@@ -387,7 +387,7 @@ TODO:
 
 int main() {
     std::cout << "#cpus: " << core::device::CPU::n_cores() << "\n";
-    std::cout << "cacheLineSize: " << core::device::CPU::cacheline_size() << "\n";
+    std::cout << "cacheLineSize: " << core::device::CPU::cacheline_size << "\n"; // -> constexpr int64
     std::cout << "RAM: " << core::device::CPU::ram() << "GB \n";
     std::cout << "hybrid cores: " << core::device::CPU::has_hybrid_cores() << "\n";
 
@@ -398,5 +398,70 @@ int main() {
 
     std::cout << std::boolalpha;
     std::cout << "neon: " << core::device::CPU::ext_neon() << "\n";
+}
+```
+
+
+## threadsafe queue example (using D.Vyukov's Queue from 1024cores as a great example of Bounded MPMC)
+```
+//! Queue Simple Benchmark
+
+#include <iostream>
+#include "core/thread.hpp"
+#include "core/range.hpp"
+#include "core/timing.hpp"
+#include "core/threadsafe/bounded_mpmc.hpp"
+
+int main() {
+    using core::timing::ms;
+
+    B_MPMC_Queue<size_t, 1'048'576> q; // size passed as a template param to simplify things a bit:
+    // since the compiler will use the bit-mask for modulo all by itself...
+
+    constexpr size_t N = 1'000'000;
+    size_t s1, s2;
+
+    {// threads
+
+        core::thread t1 = [&q] {
+            for (size_t i : core::range(N)) {
+                q.push(1);
+            }
+            q.close();
+        };
+
+        core::thread t2 = [&] {
+            auto t = core::timeit([&]{
+                size_t sum = 0;
+                size_t v;
+                
+                // simpler syntax
+                while (q) {
+                    if ( q.try_pop(v) ) {
+                        sum += v;
+                    } 
+                }
+                s1 = sum;
+            });
+            std::cout << "time:" << t.in<ms>() << "\n";
+        };
+
+        core::thread t3 = [&] {
+            size_t sum = 0;
+            size_t v;
+
+            // faster:
+            while (true) {
+                if ( q.try_pop(v) ) {
+                    sum += v;
+                } else 
+                if (!q) break;
+            }
+            s2 = sum;
+        };
+
+    } // threads joined here
+
+    std::cout << "\n" << s1 + s2;
 }
 ```

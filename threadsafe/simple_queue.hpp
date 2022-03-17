@@ -2,8 +2,7 @@
 
 #include <queue>
 #include "../access.hpp"
-
-constexpr size_t cacheline = 128;
+#include "../cpu.hpp"
 
 template <typename T>
 class SimpleQueue {
@@ -66,6 +65,6 @@ public:
 private:
     core::access< std::queue<T> > queue;
     
-    alignas(cacheline)
+    alignas(core::device::CPU::cacheline_size)
     std::atomic<bool> _closed {false};
 };
