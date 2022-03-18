@@ -2,6 +2,18 @@
 // https://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
 // ...and maaan it's fast :) 
 
+/* License from 1024cores.net
+Copyright (c) 2010-2011 Dmitry Vyukov. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+   1. Redistributions of source code must retain the above copyright notice, this list of
+      conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright notice, this list
+      of conditions and the following disclaimer in the documentation and/or other materials
+      provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY DMITRY VYUKOV "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL DMITRY VYUKOV OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+The views and conclusions contained in the software and documentation are those of the authors and should not be interpreted as representing official policies, either expressed or implied, of Dmitry Vyukov.
+*/
+
 #pragma once
 
 #include <atomic>
@@ -49,6 +61,9 @@ public:
             else if ( tag < index ) { // Full -- that's our own tail...
                 return false;
             }
+            else {
+                index = write_to.load(std::memory_order_relaxed);
+            }
         } 
     }
 
@@ -76,16 +91,24 @@ public:
                     return true;
                 }
             }
-            else { // empty
+            else if ( tag < index+1 ) { // empty
                 return false;
+            }
+            else {
+                index = read_from.load(std::memory_order_relaxed);
             }
         }
     }
 
     void close() { active.store(false); }
-
+    bool closed() const { return active.load(); }
+    
     explicit operator bool () const {
         return active || (write_to.load() != read_from.load());
+    }
+
+    void print_state() const {
+        std::cerr << "Q: [" << read_from.load() << " -> " << write_to.load() << "] | active: " << std::boolalpha << active.load() << "\n";
     }
 
 private:
