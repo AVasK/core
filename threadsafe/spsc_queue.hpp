@@ -70,7 +70,7 @@ public:
         return false;
 
     }
-
+    
 
     void close() { active.store(false, std::memory_order_release); }
     bool closed() const { return active.load(std::memory_order_acquire); }
@@ -83,6 +83,23 @@ public:
     void print_state() const {
         std::cerr << "Q: [" << read_from.load() << " -> " << write_to.load() << "] | active: " << std::boolalpha << active.load() << "\n";
         std::cerr << "[ " << bool(*this) << " ]\n";
+    }
+
+
+    void debug_ring() const {
+        for (auto i : core::range(ring.size()) ) {
+            auto& elem = ring[i];
+            char sym; 
+
+            auto filled = elem.tag.load();
+            
+            if ( filled ) sym = '#';
+            else sym = ' ';
+
+            if ( filled ) {
+                std::cout << "[" << sym << "| " << elem.data << "]" << " @ " << i << "/" << ring.size() << "\n";
+            }
+        }
     }
 
 
