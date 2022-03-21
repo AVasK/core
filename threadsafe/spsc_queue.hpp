@@ -111,7 +111,7 @@ public:
     }
 
     void push(T const& data) {
-        constexpr size_t n_spinwaits = 100000;
+        constexpr size_t n_spinwaits = 1;//100000;
         // std::cerr << "push...\n";
         for (;;) {
             // std::cerr << ".";
