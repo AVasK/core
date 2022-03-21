@@ -73,9 +73,9 @@ public:
 
     bool empty() const noexcept {
         auto index = use_cached? cached_read_index : q.read_from.load(std::memory_order_acquire);
-        return q.closed() 
-        &&
-        ( index >= q.write_to.load(std::memory_order_acquire) );
+        return q.closed() && ((q.ring[index % q.ring.size()].tag == tag_status::empty)
+        ||
+        ( index >= q.write_to.load(std::memory_order_acquire) ) );
     }
 
     explicit operator bool () const noexcept {
