@@ -7,7 +7,7 @@
 
 #include <vector>
 
-template <typename T>
+template <typename T, typename size_type=unsigned>
 class spsc_queue;
 
 
@@ -52,7 +52,7 @@ private:
 };
 
 
-template <typename T>
+template <typename T, typename size_type>
 class spsc_queue {
     friend spsc_reader<T>;
     friend spsc_writer<T>;
@@ -122,10 +122,11 @@ public:
     
 
     void close() { active.store(false, std::memory_order_release); }
-    bool closed() const { return active.load(std::memory_order_acquire); }
+    bool closed() const { return !active.load(std::memory_order_acquire); }
+    bool empty() const { return write_to == read_from; }
 
     explicit operator bool () const {
-        return active.load(std::memory_order_acquire) || (write_to - read_from == 1);
+        return !(closed() && empty());
     }
 
 
@@ -153,16 +154,16 @@ public:
 
 
 private:
-    const size_t _size;
+    const size_type _size;
 
     unsigned n_writers {0};
     std::vector< core::TaggedData<T, std::atomic<bool>> > ring;
 
     alignas(core::device::CPU::cacheline_size) 
-    size_t read_from {0};
+    size_type read_from {0};
 
     alignas(core::device::CPU::cacheline_size) 
-    size_t write_to {0};
+    size_type write_to {0};
 
     alignas(core::device::CPU::cacheline_size) 
     std::atomic<bool> active {true};
