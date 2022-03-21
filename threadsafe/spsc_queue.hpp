@@ -58,7 +58,7 @@ class spsc_queue {
     friend spsc_writer<T>;
 
 public:
-    spsc_queue(size_t size=2048) : ring(size) {
+    spsc_queue(size_t size=2048) : ring(size), _size(size) {
         for (auto& elem : ring) {
             elem.tag.store(false);
         }
@@ -81,7 +81,7 @@ public:
     bool try_pop(T & data) {
         auto index = read_from + 1;
 
-        auto& slot = ring[index % ring.size()];
+        auto& slot = ring[index % _size];
         auto filled = slot.tag.load(std::memory_order_acquire);
 
         if ( filled ) 
@@ -98,7 +98,7 @@ public:
     bool try_push(T const& data) {
         auto index = write_to + 1;
 
-        auto& slot = ring[index % ring.size()];
+        auto& slot = ring[index % _size];
         auto filled = slot.tag.load(std::memory_order_acquire);
 
         if ( !filled ) { 
@@ -153,6 +153,8 @@ public:
 
 
 private:
+    const size_t _size;
+
     unsigned n_writers {0};
     std::vector< core::TaggedData<T, std::atomic<bool>> > ring;
 
