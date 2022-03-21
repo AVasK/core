@@ -49,6 +49,7 @@ struct locked {
 
     constexpr T const* operator->() const noexcept { return &ref; }
     constexpr T* operator->() noexcept { return &ref; }
+    constexpr T& operator*() noexcept { return ref; }
     // constexpr T& operator*() noexcept { return ref; } 
     operator T& () noexcept { return ref; }
 
