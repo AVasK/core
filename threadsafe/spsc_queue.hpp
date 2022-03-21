@@ -7,9 +7,56 @@
 
 #include <vector>
 
+template <typename T>
+class spsc_queue;
+
+
+template <typename T>
+struct spsc_writer {
+public:
+    spsc_writer (spsc_queue<T> & qref) : q(qref) { q.n_writers += 1; }
+
+    ~spsc_writer() { 
+        q.close();
+    }
+
+    bool try_push(T const& data) {
+        return q.try_push(data);
+    }
+
+    void push(T const& data) {
+        q.push(data);
+    }
+
+private:
+    spsc_queue<T> & q;
+};
+
+
+template <typename T>
+class spsc_reader {
+public:
+    spsc_reader(spsc_queue<T> & ref) : q{ref} { q.n_readers += 1; }
+    ~spsc_reader() { q.n_readers -= 1; }
+
+    bool try_pop(T & data) {
+        return q.try_pop(data);
+    }
+
+    operator bool() {
+        return bool(q);
+    }
+
+private:
+    spsc_queue<T> & q;
+};
+
 
 template <typename T>
 class spsc_queue {
+    friend spsc_reader<T>;
+    friend spsc_writer<T>;
+
 public:
     spsc_queue(size_t size=2048) : ring(size) {
         for (auto& elem : ring) {
@@ -17,11 +64,39 @@ public:
         }
     }
 
-    bool try_push(T const& data) {
-        static thread_local size_t cached_index = 0;
-        static thread_local bool previous_failed = false;
 
-        auto index = previous_failed ? cached_index : write_to.fetch_add(1, std::memory_order_relaxed);
+    struct oversubscription_error {};
+
+    spsc_reader<T> reader() {
+        if (n_readers < 1) return {*this};
+        else throw oversubscription_error {};
+    }
+
+    spsc_writer<T> writer() {
+        if (n_writers < 1) return {*this};
+        else throw oversubscription_error {};
+    }
+
+
+    bool try_pop(T & data) {
+        auto index = read_from + 1;
+
+        auto& slot = ring[index % ring.size()];
+        auto filled = slot.tag.load(std::memory_order_acquire);
+
+        if ( filled ) 
+        {
+            data = slot.data;
+            slot.tag.store(false, std::memory_order_release);
+            read_from = index;
+            return true;
+        }
+        return false;
+    }
+
+
+    bool try_push(T const& data) {
+        auto index = write_to + 1;
 
         auto& slot = ring[index % ring.size()];
         auto filled = slot.tag.load(std::memory_order_acquire);
@@ -29,14 +104,10 @@ public:
         if ( !filled ) { 
                 slot.data = data;
                 slot.tag.store(true, std::memory_order_release);
-                previous_failed = false;
+                write_to = index;
                 return true;
         }
-        else { // Full
-            cached_index = index;
-            previous_failed = true;
-            return false;
-        }
+        return false;
     }
 
     void push(T const& data) {
@@ -48,40 +119,18 @@ public:
             std::this_thread::yield();
         }
     }
-
-    bool try_pop(T & data) {
-        static thread_local size_t cached_index = 0;
-        static thread_local bool previous_failed = false;
-
-        auto index = previous_failed ? cached_index : read_from.fetch_add(1, std::memory_order_relaxed);
-
-        auto& slot = ring[index % ring.size()];
-        auto filled = slot.tag.load(std::memory_order_acquire);
-
-        if ( filled ) {
-            data = slot.data;
-            slot.tag.store(false, std::memory_order_release);
-            previous_failed = false;
-            return true;
-        }
-
-        cached_index = index;
-        previous_failed = true;
-        return false;
-
-    }
     
 
     void close() { active.store(false, std::memory_order_release); }
     bool closed() const { return active.load(std::memory_order_acquire); }
 
     explicit operator bool () const {
-        return active.load(std::memory_order_acquire) || (write_to.load(std::memory_order_acquire) - read_from.load(std::memory_order_acquire) == 1);
+        return active.load(std::memory_order_acquire) || (write_to - read_from == 1);
     }
 
 
     void print_state() const {
-        std::cerr << "Q: [" << read_from.load() << " -> " << write_to.load() << "] | active: " << std::boolalpha << active.load() << "\n";
+        std::cerr << "Q: [" << read_from/*.load()*/ << " -> " << write_to/*.load()*/ << "] | active: " << std::boolalpha << active.load() << "\n";
         std::cerr << "[ " << bool(*this) << " ]\n";
     }
 
@@ -104,14 +153,17 @@ public:
 
 
 private:
-    std::vector< TaggedData<T, std::atomic<bool>> > ring;
+    unsigned n_writers {0};
+    std::vector< core::TaggedData<T, std::atomic<bool>> > ring;
 
     alignas(core::device::CPU::cacheline_size) 
-    std::atomic<size_t> read_from {0};
+    size_t read_from {0};
 
     alignas(core::device::CPU::cacheline_size) 
-    std::atomic<size_t> write_to {0};
+    size_t write_to {0};
 
     alignas(core::device::CPU::cacheline_size) 
     std::atomic<bool> active {true};
+
+    unsigned n_readers {0};
 };
