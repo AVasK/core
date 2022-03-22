@@ -113,19 +113,18 @@ public:
 
 
 private:
-    const size_type _size;
-
-    unsigned n_writers {0};
     std::vector< core::TaggedData<T, std::atomic<bool>> > ring;
-
-    alignas(core::device::CPU::cacheline_size) 
-    size_type read_from {0};
-
-    alignas(core::device::CPU::cacheline_size) 
-    size_type write_to {0};
+    const size_type _size;
 
     alignas(core::device::CPU::cacheline_size) 
     std::atomic<bool> active {true};
 
+    alignas(core::device::CPU::cacheline_size) 
+    size_type read_from {0};
     unsigned n_readers {0};
+
+    alignas(core::device::CPU::cacheline_size) 
+    size_type write_to {0};
+    unsigned n_writers {0};
+
 };

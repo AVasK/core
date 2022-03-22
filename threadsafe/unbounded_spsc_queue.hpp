@@ -159,25 +159,21 @@ public:
     }
 
 private:
-
-    unsigned n_writers {0};
-    
-    alignas(core::device::CPU::cacheline_size) 
-    Block * read_block = new Block{};
-
-    alignas(core::device::CPU::cacheline_size) 
-    Block * write_block = read_block;
-
     spsc_queue< Block* > free_blocks; // free blocks (for reuse)
 
+    // reader thread:
     alignas(core::device::CPU::cacheline_size) 
+    Block * read_block = new Block{};
     size_type read_idx {0};
-
+    unsigned n_readers {0};
+    
+    // writer thread:
     alignas(core::device::CPU::cacheline_size) 
+    Block * write_block = read_block;
     size_type write_idx {0};
+    unsigned n_writers {0};
 
     alignas(core::device::CPU::cacheline_size) 
     std::atomic<bool> active {true};
-
-    unsigned n_readers {0};
+    
 };
