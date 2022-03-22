@@ -4,77 +4,36 @@
 #include "../cpu.hpp" // cacheline_size
 #include "../range.hpp" 
 #include "auxiliary/tagged.hpp" // TaggedData 
+#include "io_descriptors.hpp" // core::{queue_reader, queue_writer}
 
 #include <vector>
 
+
 template <typename T, typename size_type=unsigned>
-class spsc_queue;
-
-
-template <typename T>
-struct spsc_writer {
-public:
-    spsc_writer (spsc_queue<T> & qref) : q(qref) { q.n_writers += 1; }
-
-    ~spsc_writer() { 
-        q.close();
-    }
-
-    bool try_push(T const& data) {
-        return q.try_push(data);
-    }
-
-    void push(T const& data) {
-        q.push(data);
-    }
-
-private:
-    spsc_queue<T> & q;
-};
-
-
-template <typename T>
-class spsc_reader {
-public:
-    spsc_reader(spsc_queue<T> & ref) : q{ref} { q.n_readers += 1; }
-    ~spsc_reader() { q.n_readers -= 1; }
-
-    bool try_pop(T & data) {
-        return q.try_pop(data);
-    }
-
-    operator bool() {
-        return bool(q);
-    }
-
-private:
-    spsc_queue<T> & q;
-};
-
-
-template <typename T, typename size_type>
 class spsc_queue {
-    friend spsc_reader<T>;
-    friend spsc_writer<T>;
+    friend core::queue_reader<spsc_queue>;
+    friend core::queue_writer<spsc_queue>;
+
+    struct too_many_readers : std::exception {};
+    struct too_many_writers : std::exception {};
 
 public:
+    using value_type = T;
+
     spsc_queue(size_t size=2048) : ring(size), _size(size) {
         for (auto& elem : ring) {
             elem.tag.store(false);
         }
     }
 
-
-    struct oversubscription_error {};
-
-    spsc_reader<T> reader() {
+    core::queue_reader<spsc_queue> reader() {
         if (n_readers < 1) return {*this};
-        else throw oversubscription_error {};
+        else throw too_many_readers{};
     }
 
-    spsc_writer<T> writer() {
+    core::queue_writer<spsc_queue> writer() {
         if (n_writers < 1) return {*this};
-        else throw oversubscription_error {};
+        else throw too_many_writers{};
     }
 
 
