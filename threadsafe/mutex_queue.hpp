@@ -67,4 +67,6 @@ private:
     
     alignas(core::device::CPU::cacheline_size)
     std::atomic<bool> _closed {false};
+
+    std::atomic<unsigned> n_writers {0};
 };
