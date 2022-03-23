@@ -69,20 +69,14 @@ public:
 
 
     bool try_pop(T & data) {
-
         if (read_idx >= chunk_size) { // current block has been read through
             auto * next = read_block->next.load(std::memory_order_acquire);
             if (!next) return false;
             
             // advance to the next block
-            read_block->next.store(nullptr, std::memory_order_release);
-            if (free_blocks.try_push(read_block)) {
-                // block successfully reused
-            } else {
+            read_block->next.store(nullptr, std::memory_order_relaxed);//release);
+            if (!free_blocks.try_push(read_block)) {
                 // reuse space is full, delete the block:
-                #if LOG
-                std::cerr << "[~ "<<read_block<<"]\n";
-                #endif
                 delete read_block; 
             }
             read_block = next;
@@ -101,12 +95,10 @@ public:
             return true;
         }
         return false;
-        
     }
 
 
     bool try_push(T const& data) {
-
         if (write_idx >= chunk_size) {
             // assert(write_block->next.load(std::memory_order_acquire) == nullptr);
             
@@ -120,32 +112,39 @@ public:
             write_block->next.store(reused, std::memory_order_release);
             write_block = reused;
             write_idx = 0;
+            return false;
         }
-
         assert(write_block != nullptr);
-        assert(write_idx < chunk_size);
-
         auto & cell = write_block->cells[write_idx];
-        auto filled = cell.tag.load(std::memory_order_acquire);
-
-        if ( !filled ) { 
-                cell.data = data;
-                cell.tag.store(true, std::memory_order_release);
-                write_idx += 1;
-                return true;
-        }
-        return false;
+        cell.data = data;
+        cell.tag.store(true, std::memory_order_release);
+        write_idx += 1;
+        return true;
     }
 
 
     void push(T const& data) {
-        constexpr size_t n_spinwaits = 1;//100000;
-        // std::cerr << "push...\n";
-        for (;;) {
-            // std::cerr << ".";
-            for (size_t _ : core::range(n_spinwaits)) { if (try_push(data)) return; }
-            std::this_thread::yield();
+        if (write_idx >= chunk_size) {
+            // assert(write_block->next.load(std::memory_order_acquire) == nullptr);
+            
+            Block * reused;
+            if (!free_blocks.try_pop(reused)) {
+                reused = new Block; 
+                #if LOG
+                std::cerr << "[new "<<reused<<"]\n";
+                #endif
+            }
+            write_block->next.store(reused, std::memory_order_relaxed);//release);
+            write_block = reused;
+            write_idx = 0;
         }
+
+        assert(write_block != nullptr);
+
+        auto & cell = write_block->cells[write_idx];
+        cell.data = data;
+        cell.tag.store(true, std::memory_order_release); // write_block->next will be synced
+        write_idx += 1;
     }
     
 
