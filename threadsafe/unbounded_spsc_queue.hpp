@@ -4,7 +4,7 @@
 #include <cassert>
 #include "../cpu.hpp" // cacheline_size
 #include "../range.hpp" 
-#include "core/threadsafe/spsc_queue.hpp" // used as a channel to transfer free_blocks 
+#include "spsc_queue.hpp" // used as a channel to transfer free_blocks 
 #include "auxiliary/tagged.hpp" // TaggedData 
 #include "io_descriptors.hpp" // core::{queue_reader, queue_writer}
 
