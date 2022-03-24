@@ -1,26 +1,38 @@
 #include <iostream>
 #include <memory>
 #include <type_traits>
+#include <atomic>
 
 #include "typesystem.hpp"
 #include "pattern_matching.hpp"
 #include "macros.hpp"
 #include "maybe_empty.hpp" // EBCO for Deleter/Allocator
 #include "hash.hpp" // hashable<>
+#include "meta.hpp"
 
 namespace core {
 
 namespace detail {
     // as in unique_ptr::pointer -- std::remove_reference<Deleter>::type::pointer if that type exists,
     // otherwise T* 
-    template <class Del, typename T>
-    constexpr auto get_pointer_type_impl(T) noexcept -> typename std::remove_reference_t<Del>::pointer;
+    // template <class Del, typename T>
+    // constexpr auto get_pointer_type_impl(T const&) noexcept -> typename std::remove_reference_t<Del>::pointer;
+
+    // template <class Del, typename T>
+    // constexpr auto get_pointer_type_impl(...) noexcept -> T*;
+
+    template <class Del, typename T, class=meta::check_valid>
+    struct ptr_type {
+        using type = T*;
+    };
 
     template <class Del, typename T>
-    constexpr auto get_pointer_type_impl(...) noexcept -> T*;
+    struct ptr_type<Del,T, meta::is_valid< typename std::remove_reference_t<Del>::pointer >> {
+        using type = typename std::remove_reference_t<Del>::pointer;
+    };
 
     template <class Del, typename T>
-    using get_pointer_type = decltype( get_pointer_type_impl<Del,T>( std::declval<T>() ) );
+    using get_pointer_type = typename ptr_type<Del,T>::type; //decltype( get_pointer_type_impl<Del,T>( std::declval<T>() ) );
 
     template <class Del>
     using Ref = typename decltype(
@@ -64,6 +76,18 @@ public:
         return view<TBase>(p);
     }
 
+    explicit operator bool() { return p != nullptr; }
+
+    template <typename P>
+    friend constexpr bool operator== (view v, P const& other) {
+        return v.p == other;
+    }
+
+    template <typename P>
+    friend constexpr bool operator!= (view v, P const& other) {
+        return !(v == other);
+    }
+
 protected:
     pointer p;
 };
@@ -87,7 +111,7 @@ public:
         "the specified deleter type cannot be an rvalue reference");
     
 
-    //============[ Constructors ]=============
+    //============[ CONSTRUCTORS ]=============
     // (1)
     template <class D = Deleter, typename= std::enable_if_t<
         Type<D>(is_default_constructible && !is_pointer)
@@ -137,6 +161,9 @@ public:
     /// No copy for non-shared owning pointer
     ptr(ptr const&) = delete;
     ptr& operator= (ptr const&) = delete;
+
+    ptr(_view const&) = delete;
+    ptr& operator= (_view const&) = delete;
 
 
     //=============[ MOVE ]==============
@@ -222,8 +249,8 @@ public:
     constexpr auto get_deleter() const noexcept -> deleter_type const& { return MaybeEmpty<Deleter>::get(); }
 
 
-    constexpr auto get() const noexcept -> _view { return *this; }
-
+    [[deprecated]] constexpr auto get() const noexcept -> _view { return *this; }
+    constexpr auto view() const noexcept -> _view { return *this; }
 
     constexpr void reset(pointer other=pointer()) noexcept {
         if (p != nullptr){ get_deleter()(std::move(p)); }
@@ -235,6 +262,25 @@ public:
         auto res = ptr<T,OtherDeleter>(p, del);
         p = nullptr;
         return res;
+    }
+
+    // ======== [ ATOMIC OPERATIONS ] ========
+    auto load(std::memory_order memory_order=std::memory_order_seq_cst) -> ptr { 
+        std::atomic_thread_fence(memory_order); 
+        return ptr{ std::move(*this) };
+        // return _view{ p };
+    }
+
+
+    void store(ptr && other, std::memory_order memory_order=std::memory_order_seq_cst) {
+        (*this) = std::move(other);
+        std::atomic_thread_fence(memory_order);
+    }
+
+    void atomic_reset(pointer other=pointer(), std::memory_order memory_order=std::memory_order_seq_cst) noexcept {
+        if (p != nullptr){ get_deleter()(std::move(p)); }
+        p = other;
+        std::atomic_thread_fence(memory_order);
     }
 
 };

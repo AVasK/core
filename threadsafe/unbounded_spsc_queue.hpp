@@ -59,12 +59,12 @@ public:
 
     core::queue_reader<unbounded_spsc_queue> reader() {
         return (n_readers < 1) ? *this 
-        : throw too_many_readers();
+        : throw too_many_readers {};
     }
 
     core::queue_writer<unbounded_spsc_queue> writer() {
         return (n_writers < 1)? *this
-        : throw "fuck c++";
+        : throw too_many_writers {};
     }
 
 
