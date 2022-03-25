@@ -14,8 +14,12 @@ public:
     }
 
     ~queue_writer() { 
-        q.n_writers -= 1;
-        q.close();
+        if constexpr (Q::max_writers > 1) {
+            if (q.n_writers.fetch_sub(1) == 1) q.close();
+        } else {
+            q.n_writers -= 1;
+            q.close();
+        }
     }
 
     bool try_push(value_type const& data) { return q.try_push(data); }
