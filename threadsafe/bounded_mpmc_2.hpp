@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <vector>
+#include <type_traits>
 
 #include "../cpu.hpp" // cacheline_size
 #include "auxiliary/tagged.hpp"
@@ -12,8 +13,10 @@
 #include "../ints.hpp"
 
 
-template <typename T, size_t N>
+template <typename T, size_t N, typename tag_type=unsigned>
 class B_MPMC_Queue {
+    static_assert(std::is_unsigned<tag_type>::value, "tag_type should be unsigned!");
+
     friend core::queue_reader<B_MPMC_Queue>;
     friend core::queue_writer<B_MPMC_Queue>;
 public:
@@ -42,8 +45,8 @@ public:
         auto& slot = ring[index % N];
         auto tag = slot.tag.load(std::memory_order_acquire);
 
-        auto epoch = index/N;
-        if ( tag % 2 == 0 && tag == 2*epoch ) { // empty 
+        auto epoch = tag_type( index/N );
+        if ( tag % 2 == 0 && tag == tag_type(2*epoch) ) { // empty 
             if ( write_to.compare_exchange_weak(index, index+1, std::memory_order_relaxed) ) {
                 slot.data = data;
                 return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
@@ -69,8 +72,8 @@ public:
         auto& slot = ring[index % N];
         auto tag = slot.tag.load(std::memory_order_acquire);
 
-        auto epoch = index / N;
-        if ( tag % 2 != 0 && ((2*epoch+1) == tag) ) {
+        auto epoch = tag_type( index / N );
+        if ( tag % 2 != 0 && (tag_type(2*epoch) == (tag-1)) ) {
             if ( read_from.compare_exchange_weak(index, index+1, std::memory_order_relaxed) ) {
                 data = slot.data;
                 return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
@@ -95,7 +98,7 @@ public:
     }
 
 private:
-    std::vector<core::TaggedData<T, std::atomic<size_t>>> ring {N};
+    std::vector<core::TaggedData<T, std::atomic<tag_type>>> ring {N};
     
     alignas(core::device::CPU::cacheline_size)
     std::atomic<size_t> write_to {0};
