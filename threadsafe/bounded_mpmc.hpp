@@ -34,13 +34,55 @@ struct TaggedData {
 };
 
 
+template <class Q>
+class BMPMCQ_Writer {
+public:
+    using value_type = typename Q::value_type;
+
+    BMPMCQ_Writer(Q & ref) : q{ref} { q.writers.fetch_add(1); }
+
+    bool try_push(value_type const& data) { return q.try_push(data); }
+    void push(value_type const& data) { q.push(data); }
+
+    ~BMPMCQ_Writer() { if (q.writers.fetch_sub(1) == 1) q.close(); }
+
+private:
+    Q & q;
+};
+
+
+template <class Q>
+class BMPMCQ_Reader {
+public:
+    using value_type = typename Q::value_type;
+
+    BMPMCQ_Reader(Q & ref) : q{ref} { }
+
+    bool try_pop(value_type & data) { return q.try_pop(data); }
+
+    explicit operator bool () const { return bool(q); }
+
+private:
+    Q & q;
+};
+
 template <typename T, size_t N>
 class B_MPMC_Queue {
 public:
+    using value_type = T;
+
     B_MPMC_Queue() {
         for (size_t i : core::range(N)) {
             ring[i].tag.store(i);
         }
+    }
+
+    auto reader() -> BMPMCQ_Reader<B_MPMC_Queue> {
+        return {*this};
+    }
+
+    auto writer() -> BMPMCQ_Writer<B_MPMC_Queue> {
+        return {*this};
     }
 
     bool try_push(T const& data) {
@@ -121,4 +163,7 @@ private:
     
     alignas(core::device::CPU::cacheline_size)
         std::atomic<bool> active {true};
+
+public:
+    std::atomic<unsigned> writers {0};
 };
