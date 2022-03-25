@@ -1,8 +1,8 @@
 #pragma once 
 
 #include <queue>
-#include "../access.hpp"
-#include "../cpu.hpp"
+#include "../../access.hpp"
+#include "../../cpu.hpp"
 
 template <typename T>
 class SimpleQueue {

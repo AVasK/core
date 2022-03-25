@@ -1,4 +1,4 @@
-# Threadsafe algoritms
+# Threadsafe queue algoritms
 
 ## SPSC
 > Tests will be posted here soon. Preliminary results: tested spsc_queue, looks blazing fast, especially on Apple ARM silicon... 
@@ -12,3 +12,6 @@
 ## MPMC 
 - mutex_queue 
 > A simple mutex-based mpmc queue
+
+- b_mpmc.hpp
+> A tagged-slot ring-buffer-backed queue using CAS ops (pretty heavy-weight)

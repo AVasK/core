@@ -1,9 +1,9 @@
 #pragma once
 
 #include <atomic>
-#include "../cpu.hpp" // cacheline_size
-#include "../range.hpp" 
-#include "auxiliary/tagged.hpp" // TaggedData 
+#include "../../cpu.hpp" // cacheline_size
+#include "../../range.hpp" 
+#include "../auxiliary/tagged.hpp" // TaggedData 
 #include "io_descriptors.hpp" // core::{queue_reader, queue_writer}
 
 #include <vector>

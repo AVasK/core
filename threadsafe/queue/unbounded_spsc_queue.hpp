@@ -2,10 +2,10 @@
 
 #include <atomic>
 #include <cassert>
-#include "../cpu.hpp" // cacheline_size
-#include "../range.hpp" 
+#include "../../cpu.hpp" // cacheline_size
+#include "../../range.hpp" 
 #include "spsc_queue.hpp" // used as a channel to transfer free_blocks 
-#include "auxiliary/tagged.hpp" // TaggedData 
+#include "../auxiliary/tagged.hpp" // TaggedData 
 #include "io_descriptors.hpp" // core::{queue_reader, queue_writer}
 
 #include <vector>
