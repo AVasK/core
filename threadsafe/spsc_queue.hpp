@@ -19,6 +19,8 @@ class spsc_queue {
 
 public:
     using value_type = T;
+    static constexpr core::u8 max_writers = 1;
+    static constexpr core::u8 max_readers = 1;
 
     spsc_queue(size_t size=2048) : ring(size), _size(size) {
         for (auto& elem : ring) {
@@ -53,6 +55,23 @@ public:
         return false;
     }
 
+    bool try_move_pop(T & data) {
+        auto index = read_from + 1;
+
+        auto& slot = ring[index % _size];
+        auto filled = slot.tag.load(std::memory_order_acquire);
+
+        if ( filled ) 
+        {
+            assert (slot.data != nullptr);
+            data = std::move(slot.data);
+            slot.tag.store(false, std::memory_order_release);
+            read_from = index;
+            return true;
+        }
+        return false;
+    }
+
 
     bool try_push(T const& data) {
         auto index = write_to + 1;
@@ -62,6 +81,21 @@ public:
 
         if ( !filled ) { 
                 slot.data = data;
+                slot.tag.store(true, std::memory_order_release);
+                write_to = index;
+                return true;
+        }
+        return false;
+    }
+
+    bool try_push(T && data) {
+        auto index = write_to + 1;
+
+        auto& slot = ring[index % _size];
+        auto filled = slot.tag.load(std::memory_order_acquire);
+
+        if ( !filled ) { 
+                slot.data = std::move(data);
                 slot.tag.store(true, std::memory_order_release);
                 write_to = index;
                 return true;

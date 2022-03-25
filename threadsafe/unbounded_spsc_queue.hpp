@@ -17,6 +17,9 @@ class unbounded_spsc_queue {
 public:
     using value_type = T;
 
+    static constexpr core::u8 max_writers = 1;
+    static constexpr core::u8 max_readers = 1;
+
 private:
     friend core::queue_reader<unbounded_spsc_queue>;
     friend core::queue_writer<unbounded_spsc_queue>;
@@ -130,9 +133,6 @@ public:
             Block * reused;
             if (!free_blocks.try_pop(reused)) {
                 reused = new Block; 
-                #if LOG
-                std::cerr << "[new "<<reused<<"]\n";
-                #endif
             }
             write_block->next.store(reused, std::memory_order_relaxed);//release);
             write_block = reused;
