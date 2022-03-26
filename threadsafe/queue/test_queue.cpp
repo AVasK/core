@@ -12,6 +12,7 @@
 #include "b_mpmc.hpp"
 #include "spsc_queue.hpp"
 #include "unbounded_spsc_queue.hpp"
+#include "../bounded_mpmc.hpp" 
 // #include "core/threadsafe/unbounded_spsc_queue_beta.hpp"
 // #include "core/threadsafe/mpmc_queue.hpp"
 // #include "core/threadsafe/mpmc_proto.hpp"
@@ -23,8 +24,9 @@ int main() {
 
     using Queue = 
         // spsc_queue<size_t>;
-        unbounded_spsc_queue<size_t>;
-        // bounded_mpmc<size_t, 512>;//1'048'576>;
+        // unbounded_spsc_queue<size_t>;
+        bounded_mpmc<size_t, 512>;//1'048'576>;
+        // B_MPMC_Queue<size_t, 512>;
 
 
     Queue q{};
@@ -35,8 +37,8 @@ int main() {
     std::atomic<size_t> global_sum {0};
     std::atomic<bool> set_exit {false};
     std::atomic<unsigned> n_closed {0};
-    size_t n_producers = 1;
-    size_t n_consumers = 1;
+    size_t n_producers = 5;
+    size_t n_consumers = 5;
 
     core::access<int> time {{}}; 
 

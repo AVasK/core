@@ -49,7 +49,9 @@ public:
         if ( tag % 2 == 0 && tag == tag_type(2*epoch) ) { // empty 
             if ( write_to.compare_exchange_weak(index, index+1, std::memory_order_relaxed) ) {
                 slot.data = data;
-                return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
+                slot.tag.store(tag+1, std::memory_order_release);
+                return true;
+                // return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
             }
         }
         
@@ -76,7 +78,9 @@ public:
         if ( tag % 2 != 0 && (tag_type(2*epoch) == (tag-1)) ) {
             if ( read_from.compare_exchange_weak(index, index+1, std::memory_order_relaxed) ) {
                 data = slot.data;
-                return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
+                slot.tag.store(tag+1, std::memory_order_release);
+                return true;
+                // return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
             }
         }
 
