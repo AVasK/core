@@ -47,23 +47,6 @@ public:
 
         if ( filled ) 
         {
-            data = slot.data;
-            slot.tag.store(false, std::memory_order_release);
-            read_from = index;
-            return true;
-        }
-        return false;
-    }
-
-    bool try_move_pop(T & data) {
-        auto index = read_from + 1;
-
-        auto& slot = ring[index % _size];
-        auto filled = slot.tag.load(std::memory_order_acquire);
-
-        if ( filled ) 
-        {
-            assert (slot.data != nullptr);
             data = std::move(slot.data);
             slot.tag.store(false, std::memory_order_release);
             read_from = index;

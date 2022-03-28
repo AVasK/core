@@ -84,7 +84,6 @@ public:
             }
             read_block = next;
             read_idx = 0;
-
         }
 
         auto& cell = read_block->cells[read_idx];
@@ -92,7 +91,7 @@ public:
 
         if ( filled ) 
         {
-            data = cell.data;
+            data = std::move(cell.data);
             cell.tag.store(false, std::memory_order_release);
             read_idx += 1;
             return true;

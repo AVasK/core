@@ -40,7 +40,7 @@ public:
 
 
     bool try_push(T const& data) {
-        auto index = write_to.load(std::memory_order_relaxed);
+        auto index = write_to.load(std::memory_order_acquire);//relaxed);
 
         auto& slot = ring[index % N];
         auto tag = slot.tag.load(std::memory_order_acquire);
@@ -69,7 +69,7 @@ public:
     }
 
     bool try_pop(T & data) {
-        auto index = read_from.load(std::memory_order_relaxed);
+        auto index = read_from.load(std::memory_order_acquire);//relaxed);
 
         auto& slot = ring[index % N];
         auto tag = slot.tag.load(std::memory_order_acquire);
@@ -77,7 +77,7 @@ public:
         auto epoch = tag_type( index / N );
         if ( tag % 2 != 0 && (tag_type(2*epoch) == (tag-1)) ) {
             if ( read_from.compare_exchange_weak(index, index+1, std::memory_order_relaxed) ) {
-                data = slot.data;
+                data = std::move(slot.data);
                 slot.tag.store(tag+1, std::memory_order_release);
                 return true;
                 // return slot.tag.compare_exchange_weak(tag, tag+1, std::memory_order_acq_rel);
