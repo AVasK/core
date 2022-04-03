@@ -3,12 +3,15 @@
 #pragma once
 
 #include <type_traits>
-#include "../meta.hpp"
+#include "meta.hpp"
+#include "function.hpp"
 
 
-// Result of potential function call:
+namespace core {
+
+// ===== [ Result Of ] =====
 template <typename F, typename... Args>
-using result_of = decltype(core::invoke(std::declval<F>(), std::declval<Args>()...));
+using result_of = decltype(invoke(std::declval<F>(), std::declval<Args>()...));
 //decltype( std::declval<F>()( std::declval<Args>()... ) );
 
 
@@ -39,3 +42,6 @@ namespace detail {
 
 template <typename R, typename F, typename... Args>
 using callable_with_result = detail::callable_with_result_impl< R, meta::typelist<F, Args...> >;
+
+
+}//namespace core
