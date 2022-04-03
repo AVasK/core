@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include "typesystem.hpp"
+#include "typesystem/type.hpp"
 
 namespace core {
 
