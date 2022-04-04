@@ -62,9 +62,9 @@ auto zip(T && t, U && u) {
     return zip_adaptor<T,U>(std::forward<T>(t), std::forward<U>(u));
 }
 
-template <typename Iterable>
-auto enumerate(Iterable && iterable, size_t start=0) {
-    return zip_adaptor<Iterable, core::Range<size_t>>(std::forward<Iterable>(iterable), core::range<size_t>(start, iterable.size()+start));
+template <typename Iterable, typename Counter>
+auto enumerate(Iterable && iterable, Counter start=0) {
+    return zip_adaptor<Iterable, core::Range<Counter>>(std::forward<Iterable>(iterable), core::range<Counter>(start, iterable.size()+start));
 }
 
 }// namespace core
