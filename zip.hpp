@@ -4,6 +4,10 @@
 
 #include <utility>
 #include <iterator>
+#include <limits>
+
+#include "meta.hpp"
+#include "ints.hpp"
 
 
 namespace core {
@@ -63,8 +67,9 @@ auto zip(T && t, U && u) {
 }
 
 template <typename Iterable, typename Counter>
-auto enumerate(Iterable && iterable, Counter start=0) {
-    return zip_adaptor<Iterable, core::Range<Counter>>(std::forward<Iterable>(iterable), core::range<Counter>(start, iterable.size()+start));
+auto enumerate(Iterable && iterable, Counter start=(size_t)0 ) {
+    using IndexType = meta::select<std::numeric_limits<Counter>::is_signed, core::i64, size_t>;
+    return zip_adaptor<Iterable, core::Range<IndexType>>(std::forward<Iterable>(iterable), core::range<IndexType>(start, std::numeric_limits<IndexType>::max()));
 }
 
 }// namespace core
