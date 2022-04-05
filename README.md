@@ -1,10 +1,8 @@
 # CORE
-> CORE is still in early development stage, any feedback such as bug reports and issues is appreciated!  
-> Most of the interfaces are neither fixed nor stable yet.
+> CORE is still in development stage, any feedback and support (such as stars/bug reports/issues) is appreciated!  
+> Most of the interfaces are *not* fixed yet.
 
-> - Components in usable state: `typesystem`, `range`, `lambda`, `function`
-> - Work in progress: `pointers`, `constexpr_types`
-> - Prototyping and mockup: `exo_variant`, `generator`
+> - The README is gradually updated as the project evolves.
 
 ## core::typesystem
 
@@ -248,6 +246,31 @@ for (auto i : range(start, end, step)) {...}
 for (auto i : range(..., ..., ...).reverse()) {...}
 ```
 
+## Iteration primitives:
+- range (as described above)
+- zip (zips two Iterables, producing an iterator pair)
+- enumerate(Iterable, start=0) implemented as zip(Iterable, core::Range) under the hood.
+
+## Iterable Traits: 
+> iter_traits.hpp
+Enables checking if a given class:
+- `is_iterable<T>::value` -- can be used with begin() and end()
+- `is_indexable<T, IndexT>` -- T::operator[](IndexT) is well-defined (SFINAE) 
+    + `::value` - returns true/false
+    + `::type`  - returns the result of T[IndexT]
+- `has_size<T>` -- T.size() is defined
+    + `::value` - true/false
+    + `::type`  - returns the result type of T.size()
+
+
+## Function Traits:
+> func_traits.hpp
+Enables checking if a given callable (func/func.object/...) is:
+- `callable_with<F, Args...>`
+- `callable_with<Result, F, Args...>`
+and the result of function invocation:
+- `result_of<F, Args...>`
+
 
 ## core::thread
 
@@ -370,13 +393,21 @@ std::cout << counter.lock() << "\n";
 
 ## core::device::CPU
 > Used to access the information about CPU (including the p-cores/e-cores counts, cacheline size, e.t.c)
+> core::device::CPU::cacheline_size() uses std::minimum_hardware_interference() if possible and supported by the compiler. Otherwise it uses the most common fallbacks as written below.
 
 Supported OSes:
 - Apple Mac OS: using sysctl
 - POSIX-compliant OSes: using minimum sysctl subset (ncpus, endianness)
 
+Otherwise, the fallback provides only the information that comes in the std.
+
+> cacheline_size() is constexpr and thus somewhat speculative :) 
+> but as a rule of thumb x86-64 has a standard cacheline size of 64 bytes. Where things get a little more tricky is new Apple's harware with 128-byte cachelines. This case is thus hardcoded. The question of determining cacheline sizes @ compile-time is a nice one and as far as I can see it hasn't been properly addressed in many compilers to this day, e.g. my apple Clang compiler doesn't have the std::max_hardware_interference, thus the need for core::device::CPU::cacheline_size() is pretty much justified by that observation. 
+
+
 TODO:
-- Add Windows support (including support for Intel's 12th Gen hybrid CPUs)
+- Add support for Intel's 12th Gen hybrid CPUs
+- Add Windows support
 - Add Linux support 
 - Add OS-independent fallback using x86 cpuid
 
@@ -400,6 +431,15 @@ int main() {
     std::cout << "neon: " << core::device::CPU::ext_neon() << "\n";
 }
 ```
+
+
+## threadsafe/queue: 
+- b_mpmc - bounded mpmc tagged-ring-buffer queue.
+- mutex_queue - a general-purpose queue using std::queue and mutex
+- spsc_queue - fast bounded Single Producer Single Consumer Queue
+- unbounded_spsc_queue - fast unbounded Single Producer Single Consumer Queue
+
+> Preliminary performance tests of both `spsc_queue` and `unbounded_spsc_queue` show some great performance characteristics. (Benchmark results and code will be published soon)
 
 
 ## threadsafe queue example (using D.Vyukov's Queue from 1024cores as a great example of Bounded MPMC)
