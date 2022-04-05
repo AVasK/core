@@ -268,6 +268,7 @@ Enables checking if a given class:
 Enables checking if a given callable (func/func.object/...) is:
 - `callable_with<F, Args...>`
 - `callable_with<Result, F, Args...>`
+
 and the result of function invocation:
 - `result_of<F, Args...>`
 
