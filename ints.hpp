@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
+#include "meta.hpp"
 
 namespace core {
 inline namespace integral {
@@ -16,4 +18,12 @@ using u32 = uint32_t;
 using u64 = uint64_t;
 
 }// namespace integral
+
+template <typename From, typename To>
+using is_narrowing_conversion = meta::select<
+    (std::numeric_limits<From>::max() > std::numeric_limits<To>::max()),
+    std::true_type, 
+    std::false_type
+>;
+
 }// namespace core
