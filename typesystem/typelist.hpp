@@ -65,6 +65,17 @@ struct TypeList {
     template <size_t Index>
     constexpr auto at() const noexcept -> TypeOf<meta::type_at<Index, Ts...>> { return {}; }
 
+    // find type
+    template <typename X>
+    constexpr auto find(size_t index=0) const noexcept {
+        return meta::find<X, Ts...>();
+    }
+
+    template <typename X>
+    constexpr cx_optional<size_t> try_find(size_t index=0) const noexcept {
+        return meta::try_find<X, Ts...>();
+    }
+
     // TypeList size = sizeof...(Ts)
     constexpr auto size() const noexcept -> size_t { return sizeof...(Ts); }
 

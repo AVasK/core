@@ -4,6 +4,8 @@
 #include <initializer_list>
 #include "macros.hpp"
 
+#include "constexpr_types.hpp"
+
 #define metafunc template<class...> class
 
 namespace meta {
@@ -210,6 +212,72 @@ using type_at = typename detail::type_at_impl<Index, Ts...>::type;
 #endif
 
 
+// ===== [ find ] =====
+namespace detail {
+        
+    template <typename X, typename... Ts>
+    struct find_impl {};
+
+    template <typename X, typename T, typename... Ts>
+    struct find_impl<X, T,Ts...> {
+        static constexpr size_t find(size_t index=0) noexcept {
+            return find_impl<X, Ts...>::find(index+1);
+        }
+    };
+
+    template <typename T, typename... Ts>
+    struct find_impl<T, T,Ts...> {
+        static constexpr size_t find(size_t index=0) noexcept {
+            return index;
+        }
+    };
+
+    template <typename X>
+    struct find_impl<X> {
+        static_assert(dependent_flag<X, false>::value, "Type not found!");
+    };
+}//detail
+
+template <typename X, typename... Ts>
+constexpr size_t find(size_t index=0) {
+    return detail::find_impl<X, Ts...>::find(index);
+}
+
+
+// ===== [ try_find ] =====
+namespace detail {
+    template <typename X, typename... Ts>
+    struct try_find_impl {};
+
+    template <typename X, typename T, typename... Ts>
+    struct try_find_impl<X, T,Ts...> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return try_find_impl<X, Ts...>::try_find(index+1);
+        }
+    };
+
+    template <typename T, typename... Ts>
+    struct try_find_impl<T, T,Ts...> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return {index};
+        }
+    };
+
+    template <typename X>
+    struct try_find_impl<X> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return {};
+        }
+    };
+}//detail
+
+template <typename X, typename... Ts>
+constexpr core::cx_optional<size_t> try_find(size_t index=0) {
+    return detail::try_find_impl<X, Ts...>::try_find(index);
+}
+
+
+// ===== [ list_at ] =====
 namespace detail {
     template <class L, size_t Index>
     struct list_at_impl;
