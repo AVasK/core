@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef> // std::size_t
+#include <cassert>
 #include <initializer_list>
 
 #include "range.hpp"
@@ -24,11 +25,12 @@ public:
 
     struct cx_optional_empty {};
 
-    constexpr operator bool() const { return !is_empty; }
+    constexpr explicit operator bool() const { return !is_empty; }
 
     constexpr auto value() const {
-        if (!is_empty) return _data;
-        else throw cx_optional_empty {};
+        assert(!is_empty);
+        return _data;
+        // else throw cx_optional_empty {};
     }
 
     constexpr auto operator* () const {
@@ -41,7 +43,7 @@ public:
 
 private:
     union { T _data; };
-    bool is_empty;
+    bool is_empty=true;
 };
 
 template <typename T>
