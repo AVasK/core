@@ -2,9 +2,9 @@
 
 #include <iterator>
 
-#include "meta.hpp"
-#include "range.hpp"
-#include "macros.hpp"
+#include "../meta.hpp"
+#include "../range.hpp"
+#include "../macros.hpp"
 
 namespace core {
 
