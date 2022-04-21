@@ -665,6 +665,28 @@ template <class List, typename X>
 using contains = detail::contains_impl<List, X>;
 
 
+// =====[ unpack ]=====
+// unpack< Class<Types...> >::base|::arg<0>|...e.t.c
+template <class C>
+struct unpack;
+
+template <template<typename...> class Base, typename... Ts>
+struct unpack< Base<Ts...> >{
+
+    template <typename... Us>
+    using base = Base<Us...>;
+    
+    template <size_t I>
+    using arg = type_at<I, Ts...>;
+};
+
+template <class C, typename... Ts>
+using unpack_base = typename unpack<C>::template base<Ts...>;
+
+template <class C, size_t I>
+using unpack_arg = typename unpack<C>::template arg<I>;
+
+
 // =====[ sum ]=====
 constexpr size_t sum() noexcept { return 0; }
 
