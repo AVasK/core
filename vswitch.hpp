@@ -6,6 +6,8 @@
 //
 #pragma once
 
+namespace core {
+
 template <class T, T Case, typename F>
 struct Case_ {
     F f;
@@ -25,9 +27,6 @@ template <typename R, typename T, T Case, T... Cases, typename F, typename... Fs
 auto variadic_switch_impl (T value, F&& f, Fs&&... fs) {
     if ( value == Case ) { return std::forward<F>(f)(); }
     else return variadic_switch_impl<R, T, Cases...>(value, std::forward<Fs>(fs)... );
-//    int ret;
-//    std::initializer_list<int> ({(value == Cases ? (ret = fs()),0 : 0)...});
-//    return ret;
 }
 
 
@@ -64,6 +63,4 @@ auto switch_(T value, Case_<T, Case, F> case1, Case_<T, Cases, Fs>... cases) {
     return variadic_switch_impl<R, T, Case, Cases...>(value, case1.f, cases.f ...);
 }
 
-
-
-
+}// namespace core
