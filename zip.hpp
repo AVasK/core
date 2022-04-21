@@ -52,7 +52,7 @@ public:
     }
 
     auto operator*() {
-        return std::make_pair(*_i1, *_i2);
+        return std::make_pair(std::ref(*_i1), std::ref(*_i2));
     }
 
 private:
