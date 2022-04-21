@@ -37,7 +37,7 @@ namespace detail {
 
     template <typename R, typename F, typename... Args>
     struct callable_with_result_impl<R, meta::typelist<F,Args...>> 
-    : std::is_same< result_of<F,Args...>, R> {};
+    : std::is_convertible< result_of<F,Args...>, R> {};
 }
 
 template <typename R, typename F, typename... Args>
