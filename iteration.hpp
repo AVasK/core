@@ -62,14 +62,15 @@ private:
 
 
 template <typename T, typename U>
-auto zip(T && t, U && u) {
+constexpr auto zip(T && t, U && u) {
     return zip_adaptor<T,U>(std::forward<T>(t), std::forward<U>(u));
 }
 
 template <typename Iterable, typename Counter=size_t>
-auto enumerate(Iterable && iterable, Counter start=0) {
+constexpr auto enumerate(Iterable && iterable, Counter start=0) {
     using IndexType = meta::select<std::numeric_limits<Counter>::is_signed, core::i64, size_t>;
     return zip_adaptor<Iterable, core::Range<IndexType>>(std::forward<Iterable>(iterable), core::range<IndexType>(start, std::numeric_limits<IndexType>::max()));
 }
+
 
 }// namespace core
