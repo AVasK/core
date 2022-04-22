@@ -86,37 +86,14 @@ namespace detail {
     constexpr decltype(auto) operator| (Iterable&& iter, fmap<F> && map) {
         using T = decltype( *std::begin(iter) );
         using NewT = decltype(std::move(map).f(std::declval< T >()));
-        using NewIterable = meta::unpack_base<core::remove_cvref_t<Iterable>, NewT>;
 
-        using R = meta::select<(core::Type<NewT> != core::Type<void>), 
-            NewIterable,
-            void
-        >;
+        using R = typename meta::select<(core::Type<NewT> != core::Type<void>), 
+            meta::defer< meta::unpack_base, core::remove_cvref_t<Iterable>, NewT >,
+            meta::identity< void >
+        >::type;
 
         return iterable_map<R>::impl(iter, std::move(map).f);
     }
-
-    // C++17:
-    // template <typename F, typename Iterable,
-    //     typename=meta::require< core::is_iterable<Iterable>{} >
-    // >
-    // constexpr decltype(auto) operator| (Iterable&& iter, fmap<F> && map) {
-    //     using T = decltype( *std::begin(iter) );
-    //     using NewT = decltype(std::move(map).f(std::declval< T >()));
-    //     using NewIterable = meta::unpack_base<std::remove_reference_t<Iterable>, NewT>;
-    //     if constexpr (core::Type<NewT> != core::Type<void>) {
-    //         NewIterable ret ( iter.size() );
-    //         for (auto && [res_elem, iter_elem] : core::zip(ret, iter)) {
-    //             res_elem = std::move(map).f( iter_elem );
-    //         }
-    //         return ret;
-    //     }
-    //     else {
-    //         for (auto & elem : iter) {
-    //             std::move(map).f( elem );
-    //         }
-    //     }
-    // }
 
 }//namespace detail
 
@@ -130,13 +107,5 @@ namespace detail {
  */
 template <typename F>
 constexpr auto apply(F && f) -> detail::fmap<F> { return {std::forward<F>(f)}; }
-
-// template <typename F, typename T, size_t... Is>
-// constexpr decltype(auto) tuple_map(std::index_sequence<Is...>, F && f, T&& tuple) {
-//     if constexpr (core::Types<decltype( std::forward<F>(f)(std::get<Is>(tuple)) )...>.all( core::is_void )) {
-//         [[maybe_unused]] std::initializer_list<int> _ {(std::forward<F>(f)( std::get<Is>(tuple) ), 0)... };
-//     } else 
-//         return std::make_tuple( std::forward<F>(f)( std::get<Is>(tuple) )... );
-// }
 
 }// namespace core
