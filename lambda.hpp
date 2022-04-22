@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <type_traits>
 
+#include "meta.hpp"
+
 namespace core {
 
 /////// MACRO DEFINITIONS FOR FUNCTIONS:
@@ -100,20 +102,10 @@ auto operator opSign (F f, T value)                 \
 namespace lambda {
 namespace tools {
     
-    template <size_t Index, typename T, typename... Ts>
-    struct typeAtIndex {
-        using type = typename typeAtIndex<Index-1, Ts...>::type;
-    };
-
-    template <typename T, typename... Ts>
-    struct typeAtIndex<0, T, Ts...> {
-        using type = T;
-    };
-
     template <size_t Index>
     struct extractArg {
         template <typename T, typename... Ts>
-        constexpr static auto from(T&&, Ts&&... args) -> typename typeAtIndex<Index, T,Ts...>::type
+        constexpr static auto from(T&&, Ts&&... args) -> meta::type_at<Index, T,Ts...>
         {
             return extractArg<Index-1>::from( args... );
         }
@@ -134,7 +126,7 @@ struct FGen {};
 template <size_t Index>
 struct Arg : FGen {
     template <typename... Ts>
-    constexpr auto operator() (Ts&&... args) const noexcept-> typename tools::typeAtIndex<Index, Ts...>::type
+    constexpr auto operator() (Ts&&... args) const noexcept-> meta::type_at<Index, Ts...>
     {
         return tools::extractArg<Index>::from(args...);
     }
