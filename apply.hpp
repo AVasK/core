@@ -1,6 +1,51 @@
 #pragma once
 
+// Examples:
+// // 
+// //      +--lvalue 
+// //      |    |   
+// auto&& ret = v | apply(printer);
+// //             |
+// //         fmap( lvalue, in-place )   ->   lvalue
+// //                                           |
+// std::cout << "Ret: " << core::Type<decltype(ret)> << "\n\n";
+
+
+// //         lvalue
+// //           |     
+// auto && v2 = v | apply($a * 2) | apply(printer);
+// //       |          |
+// //       |   lvalue |  create new   ->   rvalue
+// //      rvalue                             |
+// std::cout << "V2: " << core::Type<decltype(v2)> << "\n\n";
+
+
+// auto w = v;
+
+// // apply to temporary
+// //        +------------rvalue
+// //        |              |
+// auto&& new_v = std::move(w) | apply([](auto && v){ v = v * 3; }) | apply(printer);
+// //                          |
+// //               fmap(rvalue, in-place)  ->  rvalue
+// //                                             |
+// std::cout << "new_v: " << core::Type<decltype(new_v)> << "\n\n";
+
+
+// w = v;
+
+// // apply to temporary + create new (should move from temporary when possible)
+// //         +------------rvalue
+// //         |              |
+// auto&& new_v2 = std::move(v) | apply($a * 4) | apply(printer);
+// //                           |                   |
+// //                fmap(rvalue, create new)  ->  rvalue
+// //                                               |
+// std::cout << "new_v2: " << core::Type<decltype(new_v2)> << "\n\n";
+
+
 #include <utility>
+#include <cassert>
 #include "typesystem/typelist.hpp"
 #include "typesystem/type_manipulation.hpp"
 #include "meta.hpp"
@@ -28,8 +73,9 @@ namespace detail {
     template<>
     struct tuple_map<void> {
         template <typename F, typename T, size_t... Is>
-        static constexpr void impl(std::index_sequence<Is...>, F && f, T&& tuple) {
+        static constexpr decltype(auto) impl(std::index_sequence<Is...>, F && f, T&& tuple) {
             [[maybe_unused]] std::initializer_list<int> _ {((void)std::forward<F>(f)( std::get<Is>(tuple) ), 0)... };
+            return std::forward<T>(tuple);
         }
     };
 
@@ -63,6 +109,7 @@ namespace detail {
     struct iterable_map {
         template <typename F, typename Iterable>
         static constexpr R impl(Iterable&& iter, F && f) {
+
             R ret ( iter.size() );
             for (auto && [res_elem, iter_elem] : core::zip(ret, iter)) {
                 res_elem = std::move(f)( iter_elem );
@@ -74,8 +121,11 @@ namespace detail {
     template <>
     struct iterable_map<void> {
         template <typename F, typename Iterable>
-        static constexpr void impl(Iterable&& iter, F && f) {
-            for (auto & elem : iter) std::move(f)( elem );
+        static constexpr decltype(auto) impl(Iterable&& iter, F && f) {
+            // std::cout << core::Type< Iterable > <<"\n";
+            for (auto && elem : iter) std::move(f)( elem );
+            // return std::forward<Iterable>(iter);
+            return static_cast<Iterable>(iter);
         }
     };
 
@@ -88,11 +138,11 @@ namespace detail {
         using NewT = decltype(std::move(map).f(std::declval< T >()));
 
         using R = typename meta::select<(core::Type<NewT> != core::Type<void>), 
-            meta::defer< meta::unpack_base, core::remove_cvref_t<Iterable>, NewT >,
+            meta::defer< meta::stl_rewire_t, core::remove_cvref_t<Iterable>, NewT >,
             meta::identity< void >
         >::type;
 
-        return iterable_map<R>::impl(iter, std::move(map).f);
+        return iterable_map<R>::impl(std::forward<Iterable>(iter), std::move(map).f);
     }
 
 }//namespace detail

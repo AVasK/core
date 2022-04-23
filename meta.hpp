@@ -686,6 +686,40 @@ using unpack_base = typename unpack<C>::template base<Ts...>;
 template <class C, size_t I>
 using unpack_arg = typename unpack<C>::template arg<I>;
 
+// =====[ stl_rewire ]=====
+/**
+ * @brief rewires T parameter for most STL containers: enables doing so in a generic manner
+ * @tparam C<T,...> STL Container
+ * @tparam X New type to substitute into C, giving C<X,...>
+ * @remark modifies all template-template-parameters like Allocator<> and Compare<> to take new type X
+ * @returns -> C<X,...> also an STL Container
+ */
+template <class C, typename X>
+struct stl_rewire {};
+
+template <class C, typename X>
+using stl_rewire_t = typename stl_rewire<C,X>::type;
+
+namespace detail {
+    template <class T, class>
+    struct rewire_template : identity<T> {};
+
+    template <template <typename> class C, typename T, typename NewT>
+    struct rewire_template< C<T>, NewT >{
+        using type = C<NewT>;
+    };
+}//namespace detail
+
+template <template <typename...> class C, typename T, typename... Ts, typename To>
+struct stl_rewire< C<T, Ts...>, To >{
+    using type = C<To, typename detail::rewire_template<Ts, To>::type ...>;
+};
+
+template <template <typename, size_t> class C, typename T, size_t I, typename To>
+struct stl_rewire< C<T, I>, To >{
+    using type = C<To, I>;
+};
+
 
 // =====[ sum ]=====
 constexpr size_t sum() noexcept { return 0; }
