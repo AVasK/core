@@ -75,7 +75,8 @@ namespace detail {
         template <typename F, typename T, size_t... Is>
         static constexpr decltype(auto) impl(std::index_sequence<Is...>, F && f, T&& tuple) {
             [[maybe_unused]] std::initializer_list<int> _ {((void)std::forward<F>(f)( std::get<Is>(tuple) ), 0)... };
-            return std::forward<T>(tuple);
+            // return std::forward<T>(tuple);
+            return static_cast<T>(tuple);
         }
     };
 
@@ -109,12 +110,20 @@ namespace detail {
     struct iterable_map {
         template <typename F, typename Iterable>
         static constexpr R impl(Iterable&& iter, F && f) {
-
-            R ret ( iter.size() );
-            for (auto && [res_elem, iter_elem] : core::zip(ret, iter)) {
-                res_elem = std::move(f)( iter_elem );
+            if constexpr (Type<decltype( iter )>.raw() == Type<R>.raw() && Type<decltype(iter)>(is_rvalue_reference)) {
+                // std::cerr << "move!\a";
+                R ret = std::move(iter);
+                for (auto && elem : ret) {
+                    elem = std::move(f)( elem );
+                }
+                return ret;
+            } else {
+                R ret ( iter.size() );
+                for (auto && [res_elem, iter_elem] : core::zip(ret, std::forward<Iterable>(iter))) {
+                    res_elem = std::move(f)( std::forward<decltype(iter_elem)>(iter_elem) );
+                }
+                return ret;
             }
-            return ret;
         }
     };
 
