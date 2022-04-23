@@ -506,3 +506,68 @@ int main() {
     std::cout << "\n" << s1 + s2;
 }
 ```
+
+
+## core::apply:
+> #include "apply.hpp"
+
+Allows to apply function objects to any objects that implement the fmap
+
+Currently supports iterating over std::vector, std::list, std::deque and many other iterables & even std::tuple
+
+```C++
+using namespace core::lambda;
+using core::apply;
+
+// Types supported both in-place and returning new iterable:
+// [uncomment any one and all of the below code will compile & work]
+// auto v = std::deque<int> {1,2,3,4,5};
+// auto v = std::list<int> {1,2,3,4,5};
+// auto v = std::vector<int> {1,2,3,4,5};
+auto v = std::make_tuple(1,2,3,4,5);
+// Only in-place:
+// auto v = std::array<int, 5> {1,2,3,4,5};
+
+auto printer = [](auto && e){std::cout << e << ", ";};
+
+// Examples:
+// 
+//      +--lvalue 
+//      |    |   
+auto&& ret = v | apply(printer);
+//             |
+//         fmap( lvalue, in-place )   ->   lvalue
+//                                           |
+std::cout << "Ret: " << core::Type<decltype(ret)> << "\n\n";
+
+
+//         lvalue
+//           |     
+auto && v2 = v | apply($a * 2) | apply(printer);
+//       |          |
+//       |   lvalue |  create new   ->   rvalue
+//      rvalue                             |
+std::cout << "V2: " << core::Type<decltype(v2)> << "\n\n";
+
+
+auto w = v;
+
+// apply to temporary
+//        +------------rvalue
+//        |              |
+auto&& new_v = std::move(w) | apply([](auto && v){ v = v * 3; }) | apply(printer);
+//                          |
+//               fmap(rvalue, in-place)  ->  rvalue
+//                                             |
+std::cout << "new_v: " << core::Type<decltype(new_v)> << "\n\n";
+
+w = v;
+// apply to temporary + create new (should move from temporary when possible)
+//         +------------rvalue
+//         |              |
+auto&& new_v2 = std::move(v) | apply($a * 4) | apply(printer);
+//                           |                   |
+//                fmap(rvalue, create new)  ->  rvalue
+//                                               |
+std::cout << "new_v2: " << core::Type<decltype(new_v2)> << "\n\n";
+```
