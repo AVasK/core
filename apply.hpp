@@ -108,9 +108,29 @@ namespace detail {
 
     template <class NewType>
     struct create { 
+        template <class From>
+        static constexpr decltype(auto) from(From && original) {
+            return NewType( original.size() );
+        }
+
+        static constexpr auto from(NewType && original) {
+            return NewType( std::move(original) );
+        }
+    };
+
+    template <typename T, size_t N>
+    struct create< std::array<T,N> >{
+        template <class From>
+        static constexpr auto from(From const& original) { return std::array<T,N> {}; }
+    };
+
+
+    // Apply
+    template <class NewType>
+    struct iterable_apply { 
         template <class From, class F>
-        static constexpr decltype(auto) from(From && original, F && f) {
-            NewType ret ( original.size() );
+        static constexpr decltype(auto) to(From && original, F && f) {
+            auto ret = create<NewType>::from( std::forward<From>(original) );
 
             if constexpr (core::is_indexable_with_v<NewType, size_t>) 
             {   // Indexable
@@ -128,8 +148,8 @@ namespace detail {
         }
 
         template <class F>
-        static constexpr decltype(auto) from(NewType && original, F && f) {
-            NewType ret = std::move(original);
+        static constexpr decltype(auto) to(NewType && original, F && f) {
+            auto ret = create<NewType>::from( std::move(original) );
             for (auto && elem : ret) {
                 elem = std::forward<F>(f)( elem );
             }
@@ -137,22 +157,10 @@ namespace detail {
         }
     };
 
-    template <typename T, size_t N>
-    struct create< std::array<T,N> >{
-        template <class From, class F>
-        static constexpr decltype(auto) from(From const& original, F && f) {
-            std::array<T,N> ret {};
-            for (auto&& [r_elem, o_elem] : core::zip(ret, original)) {
-                r_elem = std::forward<F>(f)( o_elem );
-            }
-            return ret;
-        }
-    };
-
     template <>
-    struct create<void> {
+    struct iterable_apply<void> {
         template <class From, class F>
-        static constexpr decltype(auto) from(From&& original, F && f) {
+        static constexpr decltype(auto) to(From&& original, F && f) {
             for (auto && elem : original) std::forward<F>(f)( elem );
             return std::forward<From>(original);
         }
@@ -168,7 +176,7 @@ namespace detail {
             meta::defer< meta::stl_rewire_t, core::remove_cvref_t<Iterable>, NewT >,
             meta::identity< void >
         >::type;
-        return create<R>::from(std::forward<Iterable>(iter), std::move(map).f);
+        return iterable_apply<R>::to(std::forward<Iterable>(iter), std::move(map).f);
     }
 
 }//namespace detail
