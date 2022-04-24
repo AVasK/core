@@ -75,8 +75,8 @@ namespace detail {
         template <typename F, typename T, size_t... Is>
         static constexpr decltype(auto) impl(std::index_sequence<Is...>, F && f, T&& tuple) {
             [[maybe_unused]] std::initializer_list<int> _ {((void)std::forward<F>(f)( std::get<Is>(tuple) ), 0)... };
-            // return std::forward<T>(tuple);
-            return static_cast<T>(tuple);
+            return std::forward<T>(tuple);
+            // return static_cast<T>(tuple);
         }
     };
 
@@ -106,52 +106,69 @@ namespace detail {
 
     // =====[ Iterable ]======
 
-    template <typename R>
-    struct iterable_map {
-        template <typename F, typename Iterable>
-        static constexpr R impl(Iterable&& iter, F && f) {
-            if constexpr (Type<decltype( iter )>.raw() == Type<R>.raw() && Type<decltype(iter)>(is_rvalue_reference)) {
-                // std::cerr << "move!\a";
-                R ret = std::move(iter);
-                for (auto && elem : ret) {
-                    elem = std::move(f)( elem );
+    template <class NewType>
+    struct create { 
+        template <class From, class F>
+        static constexpr decltype(auto) from(From && original, F && f) {
+            NewType ret ( original.size() );
+
+            if constexpr (core::is_indexable_with_v<NewType, size_t>) 
+            {   // Indexable
+                for (size_t i = 0; i < original.size(); ++i) {
+                    ret[i] = std::forward<F>(f)( std::forward<From>(original)[i] );
                 }
-                return ret;
-            } else {
-                R ret ( iter.size() );
-                for (auto && [res_elem, iter_elem] : core::zip(ret, std::forward<Iterable>(iter))) {
-                    res_elem = std::move(f)( std::forward<decltype(iter_elem)>(iter_elem) );
-                }
-                return ret;
             }
+            else  
+            {   // Iterable general case
+                for (auto&& [r, o] : core::zip(ret, std::forward<From>(original))) {
+                    r = std::forward<F>(f)( o );
+                }
+            }
+            return ret;
+        }
+
+        template <class F>
+        static constexpr decltype(auto) from(NewType && original, F && f) {
+            NewType ret = std::move(original);
+            for (auto && elem : ret) {
+                elem = std::forward<F>(f)( elem );
+            }
+            return ret;
+        }
+    };
+
+    template <typename T, size_t N>
+    struct create< std::array<T,N> >{
+        template <class From, class F>
+        static constexpr decltype(auto) from(From const& original, F && f) {
+            std::array<T,N> ret {};
+            for (auto&& [r_elem, o_elem] : core::zip(ret, original)) {
+                r_elem = std::forward<F>(f)( o_elem );
+            }
+            return ret;
         }
     };
 
     template <>
-    struct iterable_map<void> {
-        template <typename F, typename Iterable>
-        static constexpr decltype(auto) impl(Iterable&& iter, F && f) {
-            // std::cout << core::Type< Iterable > <<"\n";
-            for (auto && elem : iter) std::move(f)( elem );
-            // return std::forward<Iterable>(iter);
-            return static_cast<Iterable>(iter);
+    struct create<void> {
+        template <class From, class F>
+        static constexpr decltype(auto) from(From&& original, F && f) {
+            for (auto && elem : original) std::forward<F>(f)( elem );
+            return std::forward<From>(original);
         }
     };
 
 
     template <typename F, typename Iterable,
-        typename=meta::require< core::is_iterable<Iterable>{} >
+        class=meta::require< core::is_iterable<Iterable>{} >
     >
     constexpr decltype(auto) operator| (Iterable&& iter, fmap<F> && map) {
-        using T = decltype( *std::begin(iter) );
-        using NewT = decltype(std::move(map).f(std::declval< T >()));
-
+        using NewT = decltype(std::move(map).f( *std::begin(iter) ));
         using R = typename meta::select<(core::Type<NewT> != core::Type<void>), 
             meta::defer< meta::stl_rewire_t, core::remove_cvref_t<Iterable>, NewT >,
             meta::identity< void >
         >::type;
-
-        return iterable_map<R>::impl(std::forward<Iterable>(iter), std::move(map).f);
+        return create<R>::from(std::forward<Iterable>(iter), std::move(map).f);
     }
 
 }//namespace detail
