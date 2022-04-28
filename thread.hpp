@@ -19,14 +19,10 @@ public:
     thread (thread const&) = delete;
     thread& operator= (thread const&) = delete;
 
-    thread (thread && other) : t{ std::move(other.t) } {}
+    thread (thread && other) = default;
+    thread& operator= (thread && other) = default;
+
     thread (std::thread && other) : t{ std::move(other) } {}
-
-    thread& operator= (thread && other) {
-        t = std::move(other.t);
-        return *this;
-    }
-
     thread& operator= (std::thread && other) {
         t = std::move(other);
         return *this;
