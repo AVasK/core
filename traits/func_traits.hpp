@@ -3,8 +3,9 @@
 #pragma once
 
 #include <type_traits>
-#include "meta.hpp"
-#include "function.hpp"
+#include "../meta.hpp"
+#include "../macros.hpp"
+#include "../function.hpp"
 
 
 namespace core {
@@ -42,6 +43,24 @@ namespace detail {
 
 template <typename R, typename F, typename... Args>
 using callable_with_result = detail::callable_with_result_impl< R, meta::typelist<F, Args...> >;
+
+
+// ===== [ is_noexcept ] =====
+template <typename F, typename... Args>
+struct is_noexcept {
+    struct _ {
+        _ () noexcept(
+            noexcept(std::declval<F>()(std::declval<Args>()...))
+        ) {}
+    };
+
+    enum { value = std::is_nothrow_constructible<_>{} };
+    operator bool() { return value; }
+};
+
+
+template <typename F, typename... Args>
+CORE_CPP17_INLINE_VARIABLE constexpr auto is_noexcept_v = is_noexcept<F,Args...>::value;
 
 
 }//namespace core
