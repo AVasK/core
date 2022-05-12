@@ -276,6 +276,37 @@ constexpr core::cx_optional<size_t> try_find(size_t index=0) {
     return detail::try_find_impl<X, Ts...>::try_find(index);
 }
 
+// ===== [ try_find_meta (metafunc) ] =====
+namespace detail {
+    template <metafunc X, metafunc... Ts>
+    struct try_find_meta_impl {};
+
+    template <metafunc X, metafunc T, metafunc... Ts>
+    struct try_find_meta_impl<X, T,Ts...> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return try_find_meta_impl<X, Ts...>::try_find(index+1);
+        }
+    };
+
+    template <metafunc T, metafunc... Ts>
+    struct try_find_meta_impl<T, T,Ts...> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return {index};
+        }
+    };
+
+    template <metafunc X>
+    struct try_find_meta_impl<X> {
+        static constexpr core::cx_optional<size_t> try_find(size_t index=0) noexcept {
+            return {};
+        }
+    };
+}//detail
+
+template <metafunc X, metafunc... Ts>
+constexpr core::cx_optional<size_t> try_find_meta(size_t index=0) {
+    return detail::try_find_meta_impl<X, Ts...>::try_find(index);
+}
 
 // ===== [ list_at ] =====
 namespace detail {
