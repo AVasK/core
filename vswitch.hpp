@@ -24,7 +24,7 @@ R variadic_switch_impl (T value) { __builtin_unreachable(); }
 
 
 template <typename R, typename T, T Case, T... Cases, typename F, typename... Fs>
-auto variadic_switch_impl (T value, F&& f, Fs&&... fs) {
+decltype(auto) variadic_switch_impl (T value, F&& f, Fs&&... fs) {
     if ( value == Case ) { return std::forward<F>(f)(); }
     else return variadic_switch_impl<R, T, Cases...>(value, std::forward<Fs>(fs)... );
 }
@@ -46,7 +46,7 @@ template <
     typename F4,
     typename... Fs
 >
-auto variadic_switch_impl (T value, F1&& f1, F2&& f2, F3&& f3, F4&& f4, Fs&&... fs) {
+decltype(auto) variadic_switch_impl (T value, F1&& f1, F2&& f2, F3&& f3, F4&& f4, Fs&&... fs) {
     switch( value )
     {
         case Case1: return std::forward<F1>(f1)(); break;
@@ -58,7 +58,7 @@ auto variadic_switch_impl (T value, F1&& f1, F2&& f2, F3&& f3, F4&& f4, Fs&&... 
 }
 
 template <typename T, T Case, T... Cases, typename F, typename... Fs>
-auto switch_(T value, Case_<T, Case, F> case1, Case_<T, Cases, Fs>... cases) {
+decltype(auto) switch_(T value, Case_<T, Case, F> case1, Case_<T, Cases, Fs>... cases) {
     using R = decltype( case1.f() );
     return variadic_switch_impl<R, T, Case, Cases...>(value, case1.f, cases.f ...);
 }
