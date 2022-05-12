@@ -3,6 +3,7 @@
 #include <cstddef> // std::size_t
 #include <cassert>
 #include <initializer_list>
+#include <iostream>
 
 #include "range.hpp"
 #include "class/extension.hpp"
