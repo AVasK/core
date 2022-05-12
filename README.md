@@ -4,6 +4,47 @@
 
 > - The README is gradually updated as the project evolves.
 
+## variadic switch
+> ```C++
+> core::switch_, core::case_
+> ```
+
+> Note: variadic switch doesn't check if the value is out of bounds and doesn't match any case_. This is mainly a non-problem when substituting variadic packs, so a check seemed redundant.
+
+May be useful, for example, while implementing 'visit' for variant types
+Gets well-optimised by clang, producing a single jump-table. Things are a little bit more tricky on GCC though, so I may end up hand-unrolling some switch_ versions, e.g. for 4-, 8-, 16- e.t.c alternatives up to some number for which a jump table still makes sense.
+
+> The problem: the standard switch/case cannot be used in a variadic context. Usually that's ok and fine until you really need this functionality. 
+
+Motivating example: implementing a simple `visit` for a single variant type
+```C++
+template <class V, typename F>
+constexpr decltype(auto) dispatch (V && v, F && f) {
+    return dispatch_impl(std::make_index_sequence<core::extract_types< std::remove_reference_t<V> >().size()>{},
+     std::forward<V>(v), std::forward<F>(f));
+}
+
+template <class V, typename F, size_t... Is>
+constexpr decltype(auto) dispatch_impl (std::index_sequence<Is...>, V && v, F&& f) {
+    return core::switch_(v.index(), 
+        core::case_<size_t, Is>([&]{ return core::invoke( std::forward<F>(f), std::forward<V>(v).template at<Is>() ); })... // <- unrolling the Is pack here
+    );
+}
+```
+
+Without a variadic switch there would be more mess and less fun.
+
+A simpler example:
+```C++
+size_t index;
+
+auto res = core::switch_( index, 
+    core::case_<size_t, 0>([&]{ ... }),
+    core::case_<size_t, 1>([&]{ ... })
+);
+```
+
+
 ## core::typesystem
 
 > #### C++14
