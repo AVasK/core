@@ -127,8 +127,9 @@ Type<A>.match(
     `predicate >> [transform | Type]`
     the predicate should be created via bind_predicate or rbind_predicate.
 
-#### NEW: Pattern Matching with _ and ___ (for single-type and variadic-type-pack respectively)
-> Example from `pointers.hpp` :
+#### TODO: Pattern Matching with _ and ___ (for single-type and variadic-type-pack respectively)
+> Example:
+Pending rewrite or at least a bugfix
 
 ```C++
 using Ref = typename decltype(
