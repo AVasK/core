@@ -45,9 +45,7 @@ auto res = core::switch_( index,
 ```
 
 
-## core::typesystem
-
-> #### C++14
+## core::typesystem ![](https://img.shields.io/badge/C%2B%2B-14-green)
 
 > ```C++
 > using namespace core::typesystem
@@ -207,7 +205,8 @@ typename decltype( Types<...>.filter(...).transform<...>().match(...) )::type
 
 
 ## Checking if an expression is valid:
-> #### C++14 (uses generic lambdas)
+![](https://img.shields.io/badge/C%2B%2B-14-green) (uses generic lambdas)
+
 >    check_expr.hpp
 
 expr([](auto t) -> ... {}).is_valid_for<T>();
@@ -228,9 +227,7 @@ constexpr auto t4 = expr(CORE_HAS_TYPEDEF(pointer)).is_valid_for<P>(); // true
 ```
 
 
-## core::lambda
-
-> #### C++11
+## core::lambda ![](https://img.shields.io/badge/C%2B%2B-11-green)
 
 > ```C++
 > using namespace core::lambda;
@@ -268,9 +265,7 @@ constexpr auto $a = detail::Arg<0>();
 core::lambda::detail::Arg<...>() provides a way to extend to more arguments
 
 
-## core::range
-
-> #### C++11
+## core::range ![](https://img.shields.io/badge/C%2B%2B-11-green)
 
 > no inner namespace
     
@@ -315,16 +310,12 @@ and the result of function invocation:
 - `result_of<F, Args...>`
 
 
-## core::thread
-
-> #### C++14
+## core::thread ![](https://img.shields.io/badge/C%2B%2B-14-green)
 
 An auto-joinable wrapper class for std::thread
 
 
-## core::access
-
-> #### C++14
+## core::access ![](https://img.shields.io/badge/C%2B%2B-14-green)
 
 ```C++
 struct A { int x = 7; };
